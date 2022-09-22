@@ -64,9 +64,13 @@ def bezier_mat_by_control_points(bezier_control_points):
 
 def bezier_curve_points(bezier_control_points):
     """
-
-    :param bezier_control_points:
-    :return:
+    Calculates the coordinates of the pixels representing the Bezier curve. The algorithm is based on/developed from
+    Bernstien's polynomials and implemented in a matrix notation.
+    :param bezier_control_points: A Numpy array with shape (4, 2) consisting of pairs of np.float64 entries where the
+    first entry in each pair represents the x coordinate and the second entry represents the y coordinate of the i'th
+    point.
+    :return: A Numpy array with shape (n+1, 2) which represents the vector of points to draw on the canvas where each
+    point is a pair of x coordinate and y coordinate.
     """
     # t_vec_basic = np.array([1, t, t**2, t**3])  TODO: Use sparse matrix for performance optimization (scipy.sparse).
     n = curve_partitions(bezier_control_points)
@@ -76,7 +80,7 @@ def bezier_curve_points(bezier_control_points):
     bez_mat_ctr_p_blks = np.repeat(np.expand_dims(bez_mat_ctr_p.flatten(), axis=0), n, axis=0).reshape(
         (2, n.astype(np.uint8), BZ_DEG + 1))
     bez_mat_ctr_p_sparse = scipy.sparse.block_diag(bez_mat_ctr_p_blks)
-    pixels = np.matmul(bez_mat_ctr_p_sparse, t_vec).reshape((n, 2))
+    pixels = np.matmul(bez_mat_ctr_p_sparse, t_vec).reshape((n + 1, 2))
     return pixels
 
 
