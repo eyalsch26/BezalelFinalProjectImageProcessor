@@ -39,7 +39,7 @@ def t_sparse_vec(t_orig, t_orig_len):
     :return: A Numpy array with shape (4*(n+1),) of the partition entries powered to their index mod 4 as follows:
     [1, t0, t0^2, t0^3, 1, t1, t1^2, t1^3, ... , 1, tn, tn^2, tn^3].
     """
-    t_vec_first = np.insert(t_orig.reshape((t_orig_len, 1)), [0, 1, 1], 1, axis=1).flatten()  # [1, t, 1, 1]
+    t_vec_first = np.insert(t_orig.reshape((t_orig.size, 1)), [0, 1, 1], 1, axis=1).flatten()  # [1, t, 1, 1]
     t_vec_second = np.roll(t_vec_first, 1)  # [1, 1, t, 1]
     t_vec_third = np.roll(t_vec_second, 1)  # [1, 1, 1, t]
     t_vec = t_vec_first * t_vec_second ** 2 * t_vec_third ** 3
@@ -47,12 +47,27 @@ def t_sparse_vec(t_orig, t_orig_len):
 
 
 def bezier_mat_by_control_points(bezier_control_points):
+    """
+    Evaluates the result of the Bezier matrix multiplied by the Bezier control points in order to multiply it by the
+    t sparse vector later on. The matrices multiplication is as follows:
+    p0x p1x p2x p3x     @       1   -3  -3  -1
+    p0y p1y p2y p3y             0   3   -6  3
+                                0   0   3   -3
+                                0   0   0   1
+    :param bezier_control_points: A Numpy array with shape (8,) containing the coordinates of the Bezier control points.
+    :return: A Numpy array with shape (2, 4) containing the product of the above matrices.
+    """
     bezier_mat = np.array([[1, -3, -3, -1], [0, 3, -6, 3], [0, 0, 3, -3], [0, 0, 0, 1]])
     bez_mat_cont_pts = np.matmul(bezier_control_points.reshape(2, 4), bezier_mat)  # TODO: Make sure shape of cont_points: (2,4) - in debug it wasn't. Now fixed.
     return bez_mat_cont_pts
 
 
 def bezier_curve_points(bezier_control_points):
+    """
+
+    :param bezier_control_points:
+    :return:
+    """
     # t_vec_basic = np.array([1, t, t**2, t**3])  TODO: Use sparse matrix for performance optimization (scipy.sparse).
     n = curve_partitions(bezier_control_points)
     t_orig = np.arange(n + 1) / n  # Shape=(n+1,) TODO: Check np.linspace(s, e, n, e_ex=True, ...). Might be faster.
