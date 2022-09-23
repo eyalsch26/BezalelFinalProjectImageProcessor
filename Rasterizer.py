@@ -79,7 +79,7 @@ def bezier_curve_points(bezier_control_points):
     bez_mat_ctr_p = bezier_mat_by_control_points(bezier_control_points)
     bez_mat_ctr_p_blks = np.repeat(bez_mat_ctr_p, n + 1, axis=0)  # .reshape((2 * (n.astype(np.uint8) + 1), t_vec.size))
     bez_mat_ctr_p_sparse = scipy.sparse.block_diag(bez_mat_ctr_p_blks)
-    pixels = (bez_mat_ctr_p_sparse @ t_vec).reshape((n + 1, 2))
+    pixels = (bez_mat_ctr_p_sparse @ t_vec.T).reshape((np.uint8(n + 1), 2))
     return pixels
 
 
