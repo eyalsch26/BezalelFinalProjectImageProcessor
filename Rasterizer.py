@@ -24,7 +24,7 @@ def curve_partitions(bezier_control_points):
     :return: The number of partitions to divide the curve with dtype=np.float64.
     """
     arithmetic_mat = np.eye(BZ_CTRL_PTS, BZ_DEG) - np.eye(BZ_CTRL_PTS, BZ_DEG, -1)  # TODO: Check for more pythonic way to make more efficient.
-    dist_mat = np.abs(np.matmul(bezier_control_points.T, arithmetic_mat))
+    dist_mat = np.abs(bezier_control_points.T @ arithmetic_mat)
     n = np.array([np.sum(dist_mat)])[0]  # TODO: Check for simpler way to return a scalar. Otherwise gives warning.
     return n
 
@@ -55,10 +55,10 @@ def bezier_mat_by_control_points(bezier_control_points):
                                 0   0   3   -3
                                 0   0   0   1
     :param bezier_control_points: A Numpy array with shape (8,) containing the coordinates of the Bezier control points.
-    :return: A Numpy array with shape (2, 4) containing the product of the above matrices.
+    :return: A Numpy array with shape (1, 2, 4) containing the product of the above matrices.
     """
     bezier_mat = np.array([[1, -3, -3, -1], [0, 3, -6, 3], [0, 0, 3, -3], [0, 0, 0, 1]])
-    bez_mat_cont_pts = np.matmul(bezier_control_points.reshape(2, 4), bezier_mat)  # TODO: Make sure shape of cont_points: (2,4) - in debug it wasn't. Now fixed.
+    bez_mat_cont_pts = bezier_control_points.reshape(1, 2, 4) @ bezier_mat
     return bez_mat_cont_pts
 
 
@@ -77,10 +77,9 @@ def bezier_curve_points(bezier_control_points):
     t_orig = np.arange(n + 1) / n  # Shape=(n+1,) TODO: Check np.linspace(s, e, n, e_ex=True, ...). Might be faster.
     t_vec = t_sparse_vec(t_orig, np.uint8(n + 1))
     bez_mat_ctr_p = bezier_mat_by_control_points(bezier_control_points)
-    bez_mat_ctr_p_blks = np.repeat(np.expand_dims(bez_mat_ctr_p.flatten(), axis=0), n, axis=0).reshape(
-        (2, n.astype(np.uint8), BZ_DEG + 1))
+    bez_mat_ctr_p_blks = np.repeat(bez_mat_ctr_p, n + 1, axis=0)  # .reshape((2 * (n.astype(np.uint8) + 1), t_vec.size))
     bez_mat_ctr_p_sparse = scipy.sparse.block_diag(bez_mat_ctr_p_blks)
-    pixels = np.matmul(bez_mat_ctr_p_sparse, t_vec).reshape((n + 1, 2))
+    pixels = (bez_mat_ctr_p_sparse @ t_vec).reshape((n + 1, 2))
     return pixels
 
 
