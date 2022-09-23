@@ -57,7 +57,7 @@ def bezier_mat_by_control_points(bezier_control_points):
     :param bezier_control_points: A Numpy array with shape (8,) containing the coordinates of the Bezier control points.
     :return: A Numpy array with shape (1, 2, 4) containing the product of the above matrices.
     """
-    bezier_mat = np.array([[1, -3, -3, -1], [0, 3, -6, 3], [0, 0, 3, -3], [0, 0, 0, 1]])
+    bezier_mat = np.array([[1, -3, 3, -1], [0, 3, -6, 3], [0, 0, 3, -3], [0, 0, 0, 1]])
     bez_mat_cont_pts = bezier_control_points.reshape(1, 2, 4) @ bezier_mat
     return bez_mat_cont_pts
 
