@@ -12,7 +12,7 @@ import Tests
 
 def rasterizer_check():
     brd = np.zeros(1080 * 1920).reshape((1080, 1920))
-    b_c_p = np.array([[0, 0], [1079, 0], [1079, 1919], [0, 1919]])
+    b_c_p = np.array([[1, 1], [5, 1], [5, 5], [1, 5]])
     b_p = Rasterizer.bezier_curve_rasterizer(b_c_p)
     # brd_clrd = np.put_along_axis(brd, b_p, 1, axis=2)
     im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
