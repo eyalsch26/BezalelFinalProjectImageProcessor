@@ -38,6 +38,7 @@ BLUR_RATIO = 0.25
 #         file_index += 1
 
 
+# FileManager ----------------------------------------------------------------------------------------------------------
 # Works
 def sanity_check_rgb_to_yiq_and_back():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog.jpg')
@@ -46,6 +47,7 @@ def sanity_check_rgb_to_yiq_and_back():
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 1, 'DogRgbToYiqAndBack', False)
 
 
+# EdgeDetector ---------------------------------------------------------------------------------------------------------
 # Works.
 def sanity_check_rgb_to_yiq_to_fourier_and_back():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog.jpg')
@@ -133,6 +135,7 @@ def sanity_check_edge_detection_convolution():
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
 
 
+# Rasterizer -----------------------------------------------------------------------------------------------------------
 def t_sparse_vec_check():
     t_orig = np.arange(10 + 1) / 10
     ts_sparse = Rasterizer.t_sparse_vec(t_orig, len(t_orig))
@@ -145,6 +148,16 @@ def diag_blocks_check():
     print(arr, '\n\n', r)
 
 
+def rasterizer_check():
+    brd = np.zeros(1080 * 1920).reshape((1080, 1920))
+    b_c_p = np.array([[0, 0], [1079, 0], [1079, 1919], [0, 1919]])
+    b_p = Rasterizer.bezier_curve_rasterizer(b_c_p)
+    # brd_clrd = np.put_along_axis(brd, b_p, 1, axis=2)
+    im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
+    im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
+    img = np.dstack((b_p, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(img))
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 0, 'RasterizerBezierCurve', True)
 
 
 # def find_contour(image):
