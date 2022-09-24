@@ -4,7 +4,7 @@ import scipy
 from scipy import signal
 from matplotlib import pyplot as plt
 from matplotlib import image
-import FileManager, EdgeDetector, Colourizer
+import FileManager, EdgeDetector, Colourizer, Rasterizer
 
 # Original
 FRAMES_DIR_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input'
@@ -131,6 +131,20 @@ def sanity_check_edge_detection_convolution():
     # FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb_x, 5, 'AangGrayEdgesX', True)
     # FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb_y, 5, 'AangGrayEdgesY', True)
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
+
+
+def t_sparse_vec_check():
+    t_orig = np.arange(10 + 1) / 10
+    ts_sparse = Rasterizer.t_sparse_vec(t_orig, len(t_orig))
+    print(ts_sparse)
+
+
+def diag_blocks_check():
+    arr = np.arange(8).reshape((1, 2, 4))
+    r = np.repeat(arr, 3, axis=0)
+    print(arr, '\n\n', r)
+
+
 
 
 # def find_contour(image):

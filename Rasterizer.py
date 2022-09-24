@@ -74,12 +74,13 @@ def bezier_curve_points(bezier_control_points):
     """
     # t_vec_basic = np.array([1, t, t**2, t**3])  TODO: Use sparse matrix for performance optimization (scipy.sparse).
     n = curve_partitions(bezier_control_points)
-    t_orig = np.arange(n + 1) / n  # Shape=(n+1,) TODO: Check np.linspace(s, e, n, e_ex=True, ...). Might be faster.
-    t_vec = t_sparse_vec(t_orig, np.uint8(n + 1))
-    bez_mat_ctr_p = bezier_mat_by_control_points(bezier_control_points)
-    bez_mat_ctr_p_blks = np.repeat(bez_mat_ctr_p, n + 1, axis=0)  # .reshape((2 * (n.astype(np.uint8) + 1), t_vec.size))
+    pts_num = np.uint16(n + 1)
+    t_orig = np.arange(pts_num) / n  # Shape=(n+1,) TODO: Check np.linspace(s, e, n, e_ex=True, ...). Might be faster.
+    t_vec = t_sparse_vec(t_orig, pts_num)
+    bez_mat_ctr_p = bezier_mat_by_control_points(bezier_control_points)  # shape=(2, 4).
+    bez_mat_ctr_p_blks = np.repeat(bez_mat_ctr_p, pts_num, axis=0)  # .reshape((2*(n.astype(np.uint8) + 1), t_vec.size))
     bez_mat_ctr_p_sparse = scipy.sparse.block_diag(bez_mat_ctr_p_blks)
-    pixels = (bez_mat_ctr_p_sparse @ t_vec.T).reshape((np.uint8(n + 1), 2))
+    pixels = (bez_mat_ctr_p_sparse @ t_vec.T).reshape((pts_num, 2))
     return pixels
 
 
