@@ -11,4 +11,4 @@ import Tests
 
 
 if __name__ == '__main__':
-    rasterizer_check()
+    Tests.rasterizer_check()
