@@ -4,7 +4,7 @@ import scipy
 from scipy import signal
 from matplotlib import pyplot as plt
 from matplotlib import image
-import FileManager, EdgeDetector, Colourizer, Rasterizer
+import FileManager, EdgeDetector, Colourizer, Rasterizer, Vectorizer
 
 # Original
 FRAMES_DIR_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input'
@@ -47,7 +47,7 @@ def sanity_check_rgb_to_yiq_and_back():
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 1, 'DogRgbToYiqAndBack', False)
 
 
-# EdgeDetector ---------------------------------------------------------------------------------------------------------
+# Vectorizer -----------------------------------------------------------------------------------------------------------
 # Works.
 def sanity_check_rgb_to_yiq_to_fourier_and_back():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog.jpg')
@@ -133,6 +133,20 @@ def sanity_check_edge_detection_convolution():
     # FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb_x, 5, 'AangGrayEdgesX', True)
     # FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb_y, 5, 'AangGrayEdgesY', True)
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
+
+
+def corner_detection_check():
+    # Preparing the image and the filter.
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_0.0132.jpg')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
+    im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
+    # Computing the corners image.
+    corner_image = Vectorizer.harris_corner_detector(im_y, 5, 0.09, 0.1)
+    im_yiq_new = np.dstack((corner_image, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 8, 'AangCorners', True)
 
 
 # Rasterizer -----------------------------------------------------------------------------------------------------------

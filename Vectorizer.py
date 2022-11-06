@@ -89,7 +89,7 @@ def detect_edges(image_frame, gaussian_kernel_size):
     return gradient_im
 
 
-def harris_corner_detector(im, w_size=5, k=0.04):
+def harris_corner_detector(im, w_size=5, k=0.04, corner_threshold=0.1):
     # Computing the general form of the M matrix of the whole image.
     im_gradient = np.gradient(im)
     ix, iy = im_gradient[0], im_gradient[1]
@@ -106,5 +106,8 @@ def harris_corner_detector(im, w_size=5, k=0.04):
     r = m_determinant - k * m_trace * m_trace  # R is an image(shape==im.shape) where each pixel is a response value.
     # Finding the local maxima in each w*w window. TODO: Might not need to divide to windows.
     # Creating a binary image of r's maxima.
+    r_threshold = corner_threshold * np.max(r)
     corners_binary_im = np.zeros(im.shape, np.float64)
-    corners_binary_im[r>]
+    corners_binary_im[r >= r_threshold] = 1.0
+    # corners_binary_im = corners_binary_im * r / np.max(r)
+    return corners_binary_im

@@ -11,4 +11,4 @@ import Tests
 
 
 if __name__ == '__main__':
-    Tests.rasterizer_check()
+    Tests.corner_detection_check()
