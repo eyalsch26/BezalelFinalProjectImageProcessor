@@ -13,6 +13,8 @@ def yiq_to_rgb_mat():
 
 def rgb_to_yiq(im):
     to_yiq_mat = rgb_to_yiq_mat()
+    if len(im.shpae) == 3:
+        return np.dot(im[..., :3], to_yiq_mat)
     return np.dot(im, to_yiq_mat)
 
 

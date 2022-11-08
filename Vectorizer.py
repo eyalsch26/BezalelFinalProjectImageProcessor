@@ -1,5 +1,8 @@
 import numpy as np
 import scipy.signal
+from scipy.ndimage.morphology import generate_binary_structure
+from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage import label, center_of_mass
 import Colourizer
 
 
@@ -68,6 +71,28 @@ def blur_image(im, gaussian_kernel_size):
     return im_result
 
 
+def non_maximum_suppression(image):
+    """
+    Finds local maximas of an image.
+    :param image: A 2D array representing an image.
+    :return: A boolean array with the same shape as the input image, where True indicates local maximum.
+    """
+    # Find local maximas.
+    neighborhood = generate_binary_structure(2,2)
+    local_max = maximum_filter(image, footprint=neighborhood) == image
+    local_max[image < (image.max()*0.1)] = False
+
+    # Erode areas to single points.
+    lbs, num = label(local_max)
+    centers = center_of_mass(local_max, lbs, np.arange(num)+1)
+    centers = np.stack(centers).round().astype(np.int)
+
+    ret = np.zeros_like(image, dtype=np.bool)
+    ret[centers[:, 0], centers[:, 1]] = True
+
+    return ret
+
+
 def detect_edges(image_frame, gaussian_kernel_size):
     # Creating the image and the blur kernel.
     gray_im = Colourizer.rgb_to_gray(image_frame)
@@ -101,13 +126,19 @@ def harris_corner_detector(im, w_size=5, k=0.04, corner_threshold=0.1):
     m_iy_square = blur_image(iy_square, w_size)
     m_ixiy = blur_image(ixiy, w_size)
     # Computing the corner response value R in each pixel using the formula: R = Det(M) - k * (Trace(M))^2.
-    m_determinant = m_ix_square * m_iy_square - 2.0 * m_ixiy
+    m_determinant = m_ix_square * m_iy_square - m_ixiy * m_ixiy
     m_trace = m_ix_square + m_iy_square
-    r = m_determinant - k * m_trace * m_trace  # R is an image(shape==im.shape) where each pixel is a response value.
-    # Finding the local maxima in each w*w window. TODO: Might not need to divide to windows.
-    # Creating a binary image of r's maxima.
-    r_threshold = corner_threshold * np.max(r)
-    corners_binary_im = np.zeros(im.shape, np.float64)
-    corners_binary_im[r >= r_threshold] = 1.0
-    # corners_binary_im = corners_binary_im * r / np.max(r)
-    return corners_binary_im
+    r = m_determinant - k * (m_trace * m_trace)  # R is an image(shape==im.shape) where each pixel is a response value.
+    # According to the HUJI exercise.
+    max_m = non_maximum_suppression(r)
+    # result = np.where(max_m == True)
+    # coordinates = np.array(list(zip(result[1], result[0])))
+    # return coordinates
+    return max_m
+    # # Finding the local maxima in each w*w window. TODO: Might not need to divide to windows.
+    # # Creating a binary image of r's maxima.
+    # r_threshold = corner_threshold * np.max(r)
+    # corners_binary_im = np.zeros(im.shape, np.float64)
+    # corners_binary_im[r >= r_threshold] = 1.0
+    # # corners_binary_im = corners_binary_im * r / np.max(r)
+    # return corners_binary_im

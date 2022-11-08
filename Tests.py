@@ -135,18 +135,43 @@ def sanity_check_edge_detection_convolution():
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
 
 
-def corner_detection_check():
+def laplacian_edge_detection():
     # Preparing the image and the filter.
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_0.0132.jpg')
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
     im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
+    im_filter = EdgeDetector.laplacian_kernel()
+    im_filter = EdgeDetector.kernel_padder(im_filter, im_y.shape)
+    # Transforming to Fourier domain.
+    fourier_im_y = EdgeDetector.dft2D(im_y)
+    fourier_filter = EdgeDetector.dft2D(im_filter)
+    # Multiplying in Fourier domain.
+    fourier_im_y_filtered = fourier_im_y * np.abs(fourier_filter)
+    # Returning to time domain.
+    im_y_laplacian = EdgeDetector.idft2D(fourier_im_y_filtered)
+    im_y_laplacian = im_y_laplacian / np.max(im_y_laplacian)
+    im_y_laplacian[im_y_laplacian < 0.05] = 0
+    im_y_laplacian[im_y_laplacian >= 0.05] = 1
+    im_yiq_new = np.dstack((im_y_laplacian, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 26, 'AangGrayEdgesLaplacian', True)
+
+
+def corner_detection_check():
+    # Preparing the image and the filter.
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'
+                                  '\\frame_24_AangGrayEdgesLaplacian.png')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
+    im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
     # Computing the corners image.
-    corner_image = Vectorizer.harris_corner_detector(im_y, 5, 0.09, 0.1)
+    corner_image = Vectorizer.harris_corner_detector(im_y, 5, 0.04, 0.1)
     im_yiq_new = np.dstack((corner_image, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 8, 'AangCorners', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 27, 'AangCornersFromLaplacian', True)
 
 
 # Rasterizer -----------------------------------------------------------------------------------------------------------
