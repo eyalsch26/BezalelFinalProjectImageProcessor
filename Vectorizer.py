@@ -26,14 +26,14 @@ def gaussian_kernel(kernel_size):
 
 
 def sobel_kernel(direction='x'):
-    kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float64)
+    kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float64) / 4.0
     if direction == 'y':
         return kernel.T
     return kernel
 
 
 def laplacian_kernel():
-    return np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64)
+    return np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64) / 4.0
 
 
 def kernel_padder(kernel, im_shape):
@@ -71,6 +71,23 @@ def blur_image(im, gaussian_kernel_size):
     return im_result
 
 
+def sobel_gradient(im):
+    # Creating the image of the kernel.
+    sobel_x = kernel_padder(sobel_kernel('x'), im.shape)
+    sobel_y = kernel_padder(sobel_kernel('y'), im.shape)
+    # Transforming to Fourier domain.
+    gray_im_fourier = dft2D(im)
+    sobel_x_fourier = dft2D(sobel_x)
+    sobel_y_fourier = dft2D(sobel_y)
+    # Multiplying in Fourier domain.
+    frequency_result_x = gray_im_fourier * np.abs(sobel_x_fourier)
+    frequency_result_y = gray_im_fourier * np.abs(sobel_y_fourier)
+    # Back to time domain.
+    im_result_x = idft2D(frequency_result_x)
+    im_result_y = idft2D(frequency_result_y)
+    return im_result_x, im_result_y
+
+
 def non_maximum_suppression(image):
     """
     Finds local maximas of an image.
@@ -78,7 +95,7 @@ def non_maximum_suppression(image):
     :return: A boolean array with the same shape as the input image, where True indicates local maximum.
     """
     # Find local maximas.
-    neighborhood = generate_binary_structure(2,2)
+    neighborhood = generate_binary_structure(2, 2)
     local_max = maximum_filter(image, footprint=neighborhood) == image
     local_max[image < (image.max()*0.1)] = False
 
@@ -112,6 +129,32 @@ def detect_edges(image_frame, gaussian_kernel_size):
     # laplacian_im_fourier = gray_im_fourier * mask_expanded
     # laplacian_im = inverse_fourier_transform(laplacian_im_fourier)
     return gradient_im
+
+
+# def canny_edge_detector(im, )
+
+
+def harris_corner_detector_sobel(im, w_size=5, k=0.04, corner_threshold=0.1):
+    # Computing the general form of the M matrix of the whole image.
+    im_gradient = sobel_gradient(im)
+    ix, iy = im_gradient[0], im_gradient[1]
+    ix_square = ix * ix
+    iy_square = iy * iy
+    ixiy = ix * iy
+    # Computing the M matrix entries for each window (the weighted sum of values in the window) by blurring.
+    m_ix_square = ix_square
+    m_iy_square = iy_square
+    m_ixiy = ixiy
+    # Computing the corner response value R in each pixel using the formula: R = Det(M) - k * (Trace(M))^2.
+    m_determinant = m_ix_square * m_iy_square - m_ixiy * m_ixiy
+    m_trace = m_ix_square + m_iy_square
+    r = m_determinant - k * (m_trace * m_trace)  # R is an image(shape==im.shape) where each pixel is a response value.
+    # According to the HUJI exercise.
+    max_m = non_maximum_suppression(r)
+    # result = np.where(max_m == True)
+    # coordinates = np.array(list(zip(result[1], result[0])))
+    # return coordinates
+    return max_m
 
 
 def harris_corner_detector(im, w_size=5, k=0.04, corner_threshold=0.1):

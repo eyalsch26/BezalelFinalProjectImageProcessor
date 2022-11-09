@@ -12,4 +12,4 @@ import Tests
 
 if __name__ == '__main__':
     # Tests.laplacian_edge_detection()
-    Tests.corner_detection_check()
+    Tests.corner_detection_sobel_check()
