@@ -88,6 +88,14 @@ def sobel_gradient(im):
     return im_result_x, im_result_y
 
 
+def quantize_angle_image(im):
+    im[im <= 22.5] = 0
+    im[22.5 < im <= 67.5] = 45
+    im[67.5 < im <= 112.5] = 90
+    # im[112.5 < im <= ] = 135
+    im[im < -135] = 135
+
+
 def non_maximum_suppression(image):
     """
     Finds local maximas of an image.
@@ -131,7 +139,10 @@ def detect_edges(image_frame, gaussian_kernel_size):
     return gradient_im
 
 
-# def canny_edge_detector(im, )
+def canny_edge_detector(im, gaussian_kernel_size, t_1, t_2):
+    im_gradient_sobel = sobel_gradient(im)
+    im_angle = np.abs(np.arctan2(im_gradient_sobel[1], im_gradient_sobel[0]) * 180.0 / np.pi)  # Angles in [-pi, pi].
+    im_angle_quantized = quantize_angle_image(im_angle)
 
 
 def harris_corner_detector_sobel(im, w_size=5, k=0.04, corner_threshold=0.1):

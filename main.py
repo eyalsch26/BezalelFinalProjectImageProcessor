@@ -11,5 +11,8 @@ import Tests
 
 
 if __name__ == '__main__':
+    a = np.arange(10)
+    a[2 < a < 7] = 100
+    print(a)
     # Tests.laplacian_edge_detection()
-    Tests.corner_detection_sobel_check()
+    # Tests.corner_detection_sobel_check()
