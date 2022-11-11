@@ -179,8 +179,8 @@ def corner_detection_sobel_check():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_0.0132.jpg')
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
-    im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
-    im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
+    im_i = np.zeros((1080, 1920))
+    im_q = np.zeros((1080, 1920))
     # Computing the corners image.
     corner_image = Vectorizer.harris_corner_detector_sobel(im_y, 3, 0.04, 0.1)
     im_yiq_new = np.dstack((corner_image, im_i, im_q))

@@ -8,6 +8,8 @@ import Colourizer
 
 GAUSSIAN_KERNEL = 9
 HARRIS_W = 5
+GRAD_DIRECTIONS_NUM = 4
+QUANTIZE_DEGREE_STEP = 45
 
 
 def gaussian_kernel(kernel_size):
@@ -33,7 +35,7 @@ def sobel_kernel(direction='x'):
 
 
 def laplacian_kernel():
-    return np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64) / 4.0
+    return np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64)
 
 
 def kernel_padder(kernel, im_shape):
@@ -89,11 +91,12 @@ def sobel_gradient(im):
 
 
 def quantize_angle_image(im):
-    im[im <= 22.5] = 0
-    im[22.5 < im <= 67.5] = 45
-    im[67.5 < im <= 112.5] = 90
-    # im[112.5 < im <= ] = 135
-    im[im < -135] = 135
+    img = np.abs(im)
+    img[(157.5 < img) & (img <= 22.5)] = 0
+    img[(22.5 < img) & (img <= 67.5)] = 45
+    img[(67.5 < img) & (img <= 112.5)] = 90
+    img[(112.5 < img) & (img <= 157.5)] = 135
+    return img
 
 
 def non_maximum_suppression(image):
@@ -118,6 +121,35 @@ def non_maximum_suppression(image):
     return ret
 
 
+def masks_for_nms_canny(nms_size=3):
+    hrz = np.zeros((nms_size, nms_size))
+    hrz[nms_size // 2] = np.ones(nms_size)
+    vtc = hrz.T
+    dce = np.eye(nms_size)
+    acc = dce[::-1]
+    return np.array([hrz, vtc, dce, acc])
+
+
+def separate_gradients(gradient_magnitude, angle_im):
+    sprt_grdt = np.zeros((GRAD_DIRECTIONS_NUM, angle_im.shape[0], angle_im.shape[1]))
+    for i in range(GRAD_DIRECTIONS_NUM):
+        sprt_grdt[i][angle_im == i * QUANTIZE_DEGREE_STEP] = 1
+        sprt_grdt[i] *= gradient_magnitude
+    return sprt_grdt
+
+
+def non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_size):
+    # Creating the masks according to nms_size.
+    masks = masks_for_nms_canny(nms_size)  # [horizontal, vertical, decent, accent].
+    # Isolating each quantize angle in the gradient magnitude image to separate image.
+    separated_gradients = separate_gradients(gradient_magnitude, im_angle_quantized)  # [horizontal, vertical, decent, accent].
+    # Applying the maxima filter.
+    result = np.zeros(gradient_magnitude.shape)
+    for i in range(GRAD_DIRECTIONS_NUM):
+        result += maximum_filter(separated_gradients[i], footprint=masks[i])
+    return result
+
+
 def detect_edges(image_frame, gaussian_kernel_size):
     # Creating the image and the blur kernel.
     gray_im = Colourizer.rgb_to_gray(image_frame)
@@ -139,10 +171,16 @@ def detect_edges(image_frame, gaussian_kernel_size):
     return gradient_im
 
 
-def canny_edge_detector(im, gaussian_kernel_size, t_1, t_2):
+def canny_edge_detector(im, gaussian_kernel_size, t_1, t_2, nms_size=3):
     im_gradient_sobel = sobel_gradient(im)
-    im_angle = np.abs(np.arctan2(im_gradient_sobel[1], im_gradient_sobel[0]) * 180.0 / np.pi)  # Angles in [-pi, pi].
+    im_gradient_sobel_x, im_gradient_sobel_y = im_gradient_sobel[0], im_gradient_sobel[1]
+    gradient_magnitude = np.sqrt(im_gradient_sobel_x * im_gradient_sobel_x + im_gradient_sobel_y * im_gradient_sobel_y)
+    im_angle = np.arctan2(im_gradient_sobel_y, im_gradient_sobel_x) * 180.0 / np.pi  # Angles in [-pi, pi].
     im_angle_quantized = quantize_angle_image(im_angle)
+    im_maxima = non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_size)
+    result = np.zeros(gradient_magnitude.shape)
+    result[im_maxima > t_1] = 1
+    result[(im_maxima > t_2) & ()]
 
 
 def harris_corner_detector_sobel(im, w_size=5, k=0.04, corner_threshold=0.1):
