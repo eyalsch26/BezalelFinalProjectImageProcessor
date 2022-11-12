@@ -171,16 +171,27 @@ def detect_edges(image_frame, gaussian_kernel_size):
     return gradient_im
 
 
-def canny_edge_detector(im, gaussian_kernel_size, t_1, t_2, nms_size=3):
+def canny_edge_detector(im, t1, t2, nms_size=3, t2_cnct=3, gaussian_kernel_size=0):
+    # Generating the gradient magnitude image. TODO: Using Sobel. Might need to change to regular Gaussian.
     im_gradient_sobel = sobel_gradient(im)
+    if gaussian_kernel_size > 0:
+        im_gradient_sobel = blur_image(im, gaussian_kernel_size)
     im_gradient_sobel_x, im_gradient_sobel_y = im_gradient_sobel[0], im_gradient_sobel[1]
     gradient_magnitude = np.sqrt(im_gradient_sobel_x * im_gradient_sobel_x + im_gradient_sobel_y * im_gradient_sobel_y)
+    # Generating the angle image, converting to degrees and quantizing.
     im_angle = np.arctan2(im_gradient_sobel_y, im_gradient_sobel_x) * 180.0 / np.pi  # Angles in [-pi, pi].
     im_angle_quantized = quantize_angle_image(im_angle)
+    # Computing the maxima image using non maximum suppression and normalizing.
     im_maxima = non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_size)
+    im_maxima_max = np.max(im_maxima)
+    im_maxima /= im_maxima_max
+    # Filtering according to t1 and t2 (Hysteresis stage).
     result = np.zeros(gradient_magnitude.shape)
-    result[im_maxima > t_1] = 1
-    result[(im_maxima > t_2) & ()]
+    result[im_maxima > t1] = 1  # First filtering.
+    result[(im_maxima > t2) & (im_maxima <= t1)] = im_maxima[(im_maxima > t2) & (im_maxima <= t1)]
+    result = maximum_filter(result, footprint=np.ones((t2_cnct, t2_cnct)))  # Second filtering. TODO: Maybe few times.
+    result[result != 1] = 0
+    return result
 
 
 def harris_corner_detector_sobel(im, w_size=5, k=0.04, corner_threshold=0.1):

@@ -13,8 +13,7 @@ import Tests
 if __name__ == '__main__':
     a = np.zeros((2, 5, 5))
     b = np.arange(25).reshape((5, 5))
-    a[1][b > 4] = 1
-    a[1] *= b
+    a[1][(b > 0) & (b < 10)] = b[(b > 0) & (b < 10)]
     print(a)
     # Tests.laplacian_edge_detection()
     # Tests.corner_detection_sobel_check()
