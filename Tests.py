@@ -159,6 +159,20 @@ def laplacian_edge_detection():
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 26, 'AangGrayEdgesLaplacian', True)
 
 
+def canny_detector_check():
+    # Preparing the image and the filter.
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_0.0132.jpg')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros((1080, 1920))
+    im_q = np.zeros((1080, 1920))
+    # Computing the corners image.
+    canny_edges_im = Vectorizer.canny_edge_detector(im_y, k=8, gaussian_kernel_size=5)
+    im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 31, 'AangCannyGauss5k80imp', True)
+
+
 def corner_detection_check():
     # Preparing the image and the filter.
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'

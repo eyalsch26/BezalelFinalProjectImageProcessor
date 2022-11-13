@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+from scipy import ndimage
 from scipy import sparse
 from scipy import signal
 import matplotlib.pyplot as plt
@@ -11,9 +12,10 @@ import Tests
 
 
 if __name__ == '__main__':
-    a = np.zeros((2, 5, 5))
-    b = np.arange(25).reshape((5, 5))
-    a[1][(b > 0) & (b < 10)] = b[(b > 0) & (b < 10)]
-    print(a)
+    # a = np.zeros((2, 5, 5))
+    # b = np.arange(25).reshape((5, 5))
+    # print(b.shape)
+    # # b = ndimage.maximum_filter(b, footprint=np.ones((3, 3)))
+    # print(b.size)
     # Tests.laplacian_edge_detection()
-    # Tests.corner_detection_sobel_check()
+    Tests.canny_detector_check()
