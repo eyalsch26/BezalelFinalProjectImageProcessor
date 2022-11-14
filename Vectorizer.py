@@ -150,11 +150,10 @@ def non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_si
     return result
 
 
-def canny_edge_detector(im, nms_size=3, k=1.4, t2_cnct=3, gaussian_kernel_size=0):
-    # Generating the gradient magnitude image. TODO: Using Sobel. Might need to change to regular Gaussian.
-    im_gradient_sobel = sobel_gradient(im)
-    if gaussian_kernel_size > 0:
-        im_gradient_sobel = np.gradient(blur_image(im, gaussian_kernel_size))
+def canny_edge_detector(im, nms_size=3, k=1.4, t2_cnct=3, gaussian_kernel_size=1):
+    # Generating the gradient magnitude image.
+    blurred_im = blur_image(im, gaussian_kernel_size)
+    im_gradient_sobel = np.gradient(blurred_im)  # sobel_gradient(blurred_im)
     im_gradient_sobel_x, im_gradient_sobel_y = im_gradient_sobel[0], im_gradient_sobel[1]
     gradient_magnitude = np.sqrt(im_gradient_sobel_x * im_gradient_sobel_x + im_gradient_sobel_y * im_gradient_sobel_y)
     # Generating the angle image, converting to degrees and quantizing.
@@ -171,13 +170,12 @@ def canny_edge_detector(im, nms_size=3, k=1.4, t2_cnct=3, gaussian_kernel_size=0
     t2 = t1 * 0.5  # According to "An improved Canny edge detection algorithm".
     result = np.zeros(gradient_magnitude.shape)
     result[im_maxima > t1] = 1  # First filtering.
-    t1_mask = result
-    t2_mask = np.zeros(gradient_magnitude.shape)  # Second filtering. TODO: Maybe few times.
+    t1_mask = result.copy()
+    t2_mask = np.zeros(gradient_magnitude.shape)  # Second filtering.
     t2_mask[(im_maxima > t2) & (im_maxima <= t1)] = 1
     # result[(im_maxima > t2) & (im_maxima <= t1)] = im_maxima[(im_maxima > t2) & (im_maxima <= t1)]
-    result_m = maximum_filter(t1_mask, footprint=np.ones((t2_cnct, t2_cnct))) == t2_mask
-    result += result_m
-    result[result != 1] = 0
+    result += maximum_filter(t1_mask, footprint=np.ones((t2_cnct, t2_cnct))) * t2_mask
+    # result[result != 1] = 0
     return result
 
 
