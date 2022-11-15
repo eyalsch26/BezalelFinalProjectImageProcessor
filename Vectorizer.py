@@ -259,8 +259,8 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))  # np.mean(lap_im) + t1_co * np.std(lap_im)  # t1_co
     t2 = t2_co * t1
     edges_im = np.zeros(im.shape)
-    edges_im[lap_im < t2] = 0
-    edges_im[lap_im >= t1] = 1
+    edges_im[lap_im < t2] = 1
+    edges_im[lap_im >= t1] = 0
     weak_edge_mask = (lap_im >= t2) & (lap_im < t1)
     weak_edges = maximum_filter(edges_im, footprint=np.ones((3, 3))) * weak_edge_mask
     edges_im += weak_edges

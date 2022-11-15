@@ -165,7 +165,7 @@ def my_edge_detection_check(t1_co, t2_co):
     canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 41, f'AangDetectEdgest{t1_co}t{t2_co}HD720', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 42, f'AangDetectEdgest{t1_co}t{t2_co}HD720', True)
 
 
 def zero_crossing_check():
