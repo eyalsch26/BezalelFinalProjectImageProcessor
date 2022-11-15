@@ -170,6 +170,14 @@ def non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_si
     return result
 
 
+def remove_isolated_pixels(im):
+    # Creating the image of the kernel.
+    mask = np.array([[2, 2, 2], [2, 1, 2], [2, 2, 2]], dtype=np.float64)
+    # Convolving to remove the isolated pixels.
+    im_result = im - (scipy.signal.convolve2d(im, mask, mode='same') == 1)
+    return im_result
+
+
 def canny_edge_detector(im, nms_size=3, k=1.4, t2_cnct=3, gaussian_kernel_size=1):
     # Generating the gradient magnitude image.
     blurred_im = blur_image(im, gaussian_kernel_size)
@@ -251,17 +259,22 @@ def harris_corner_detector(im, w_size=5, k=0.04, corner_threshold=0.1):
 
 
 def detect_edges(im, t1_co=0.975, t2_co=0.995):
-    # s = sobel_gradient(im)
+    # Computing Laplacian/Sobel on the image.
+    # s = sobel_gradient(im)  # Works yet not as good as just laplacian - thick lines.
     # lap_im = sobel_gradient(s[0])[0] + sobel_gradient(s[1])[1]
-    lap_im = laplacian_image(im)
+    lap_im = laplacian_image(blur_image(im, 55))  # For images from reality use: blur_image(im, 15)
     lap_im -= np.min(lap_im)  # Clipping to [0, 1].
     lap_im /= np.max(lap_im)  # Normalizing.
+    # Computing thresholds.
     t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))  # np.mean(lap_im) + t1_co * np.std(lap_im)  # t1_co
     t2 = t2_co * t1
+    # Result according to the thresholds.
     edges_im = np.zeros(im.shape)
     edges_im[lap_im < t2] = 1
     edges_im[lap_im >= t1] = 0
-    weak_edge_mask = (lap_im >= t2) & (lap_im < t1)
+    weak_edge_mask = (lap_im >= t2) & (lap_im < t1)  # Detect weak edges which touch strong edges.
     weak_edges = maximum_filter(edges_im, footprint=np.ones((3, 3))) * weak_edge_mask
     edges_im += weak_edges
+    # Remove isolated pixels.
+    edges_im = remove_isolated_pixels(edges_im)
     return edges_im
