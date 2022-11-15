@@ -135,31 +135,40 @@ def sanity_check_edge_detection_convolution():
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
 
 
-def laplacian_edge_detection():
+def laplacian_edge_detection_check(t_co):
     # Preparing the image and the filter.
-    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_0.0132.jpg')
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD720.png')
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
-    im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
-    im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
-    im_filter = EdgeDetector.laplacian_kernel()
-    im_filter = EdgeDetector.kernel_padder(im_filter, im_y.shape)
-    # Transforming to Fourier domain.
-    fourier_im_y = EdgeDetector.dft2D(im_y)
-    fourier_filter = EdgeDetector.dft2D(im_filter)
-    # Multiplying in Fourier domain.
-    fourier_im_y_filtered = fourier_im_y * np.abs(fourier_filter)
-    # Returning to time domain.
-    im_y_laplacian = EdgeDetector.idft2D(fourier_im_y_filtered)
-    im_y_laplacian = im_y_laplacian / np.max(im_y_laplacian)
-    im_y_laplacian[im_y_laplacian < 0.05] = 0
-    im_y_laplacian[im_y_laplacian >= 0.05] = 1
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    im_y_laplacian = Vectorizer.laplacian_image(im_y)
+    im_y_laplacian -= np.min(im_y_laplacian)  # Clipping to [0, 1].
+    im_y_laplacian = im_y_laplacian / np.max(im_y_laplacian)  # Normalizing.
+    t1 = t_co * (np.std(im_y_laplacian) + np.mean(im_y_laplacian))  # np.mean(im_y_laplacian) + t_co * np.std(im_y_laplacian) # t_co * np.mean(im_y_laplacian)
+    t2 = t1 * 0.5
+    im_y_laplacian[im_y_laplacian >= t1] = 1
+    im_y_laplacian[im_y_laplacian < t1] = 0
     im_yiq_new = np.dstack((im_y_laplacian, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 26, 'AangGrayEdgesLaplacian', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 40, f'AangLaplacian{t_co}', True)
 
 
-def canny_detector_check():
+def my_edge_detection_check(t1_co, t2_co):
+    # Preparing the image and the filter.
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD720.png')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges.
+    canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
+    im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 41, f'AangDetectEdgest{t1_co}t{t2_co}HD720', True)
+
+
+def zero_crossing_check():
     # Preparing the image and the filter.
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD540.png')
     im_yiq = Colourizer.rgb_to_yiq(im)
@@ -167,10 +176,27 @@ def canny_detector_check():
     im_i = np.zeros(im_y.shape)
     im_q = np.zeros(im_y.shape)
     # Computing the corners image.
-    canny_edges_im = Vectorizer.canny_edge_detector(im_y, k=6, gaussian_kernel_size=5)
+    zero_crossing_coordinates = Vectorizer.zero_crossing(im_y)
+    im_y_new = np.zeros(im_y.shape)
+    im_y_new[zero_crossing_coordinates[0], zero_crossing_coordinates[1]] = 1
+    im_yiq_new = np.dstack((im_y_new, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 34, 'AangZeroCrossingHD540', True)
+
+
+def canny_detector_check(k, g):
+    # Preparing the image and the filter.
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD540.png')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges.
+    canny_edges_im = Vectorizer.canny_edge_detector(im_y, k=k, gaussian_kernel_size=g)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 32, 'AangCannyGauss5k60', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 33, 'AangCannyGauss' + str(g) + 'k' + str(k) + 'HD540', True)
+
 
 
 def corner_detection_check():

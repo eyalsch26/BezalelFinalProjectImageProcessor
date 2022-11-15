@@ -28,7 +28,7 @@ def gaussian_kernel(kernel_size):
 
 
 def sobel_kernel(direction='x'):
-    kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float64) / 4.0
+    kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float64)  # / 4.0
     if direction == 'y':
         return kernel.T
     return kernel
@@ -71,6 +71,26 @@ def blur_image(im, gaussian_kernel_size):
     # Back to time domain.
     im_result = idft2D(frequency_result)
     return im_result
+
+
+def laplacian_image(im):
+    # Creating the image of the kernel.
+    mask = laplacian_kernel()
+    mask_expanded = kernel_padder(mask, im.shape)
+    # Transforming to Fourier domain.
+    gray_im_fourier = dft2D(im)
+    mask_fourier = dft2D(mask_expanded)
+    # Multiplying in Fourier domain.
+    frequency_result = gray_im_fourier * np.abs(mask_fourier)
+    # Returning to time domain.
+    im_result = idft2D(frequency_result)
+    return im_result
+
+
+def zero_crossing(im):
+    lap_im = laplacian_image(im)
+    zr_crss = np.where(np.diff(np.sign(lap_im)))
+    return zr_crss
 
 
 def sobel_gradient(im):
@@ -164,18 +184,16 @@ def canny_edge_detector(im, nms_size=3, k=1.4, t2_cnct=3, gaussian_kernel_size=1
     im_maxima_max = np.max(im_maxima)
     im_maxima /= im_maxima_max
     # Computing t1 and t2 and filtering according to them (Hysteresis stage).
-    grd_mean = np.mean(gradient_magnitude / np.max(gradient_magnitude))
-    sigma = np.std(gradient_magnitude / np.max(gradient_magnitude))  # Standard deviation.
-    t1 = grd_mean + k * sigma
-    t2 = t1 * 0.5  # According to "An improved Canny edge detection algorithm".
+    grd_mean = np.mean(gradient_magnitude / im_maxima_max)
+    sigma = np.std(gradient_magnitude / im_maxima_max)  # Standard deviation.
+    t1 = im_maxima_max * 0.4  # grd_mean + k * sigma
+    t2 = t1 * 0.75  # According to "An improved Canny edge detection algorithm".
     result = np.zeros(gradient_magnitude.shape)
     result[im_maxima > t1] = 1  # First filtering.
     t1_mask = result.copy()
     t2_mask = np.zeros(gradient_magnitude.shape)  # Second filtering.
     t2_mask[(im_maxima > t2) & (im_maxima <= t1)] = 1
-    # result[(im_maxima > t2) & (im_maxima <= t1)] = im_maxima[(im_maxima > t2) & (im_maxima <= t1)]
     result += maximum_filter(t1_mask, footprint=np.ones((t2_cnct, t2_cnct))) * t2_mask
-    # result[result != 1] = 0
     return result
 
 
@@ -232,22 +250,18 @@ def harris_corner_detector(im, w_size=5, k=0.04, corner_threshold=0.1):
     # return corners_binary_im
 
 
-def detect_edges(image_frame, gaussian_kernel_size):
-    # Creating the image and the blur kernel.
-    gray_im = Colourizer.rgb_to_gray(image_frame)
-    # mask = gaussian_kernel(gaussian_kernel_size)
-    # mask_expanded = kernel_padded(mask, gray_im.shape)
-    # Extracting the gradient.
-    # Extracting the Laplacian.
-    # gray_im_fourier = fourier_transform(gray_im)
-    # mask_fourier = fourier_transform(mask_expanded)
-    # gradient_im_fourier =
-    # gaussian_im = convolve2d(gray_im, LAPLACIAN, 'same')
-    gradient_im_x = scipy.signal.convolve2d(gray_im, sobel_kernel('x'), 'same')
-    gradient_im_x = 255 * gradient_im_x / np.amax(gradient_im_x)
-    gradient_im_y = scipy.signal.convolve2d(gray_im, sobel_kernel('y'), 'same')
-    gradient_im_y = 255 * gradient_im_y / np.amax(gradient_im_y)
-    gradient_im = [gradient_im_x, gradient_im_y]
-    # laplacian_im_fourier = gray_im_fourier * mask_expanded
-    # laplacian_im = inverse_fourier_transform(laplacian_im_fourier)
-    return gradient_im
+def detect_edges(im, t1_co=0.975, t2_co=0.995):
+    # s = sobel_gradient(im)
+    # lap_im = sobel_gradient(s[0])[0] + sobel_gradient(s[1])[1]
+    lap_im = laplacian_image(im)
+    lap_im -= np.min(lap_im)  # Clipping to [0, 1].
+    lap_im /= np.max(lap_im)  # Normalizing.
+    t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))  # np.mean(lap_im) + t1_co * np.std(lap_im)  # t1_co
+    t2 = t2_co * t1
+    edges_im = np.zeros(im.shape)
+    edges_im[lap_im < t2] = 0
+    edges_im[lap_im >= t1] = 1
+    weak_edge_mask = (lap_im >= t2) & (lap_im < t1)
+    weak_edges = maximum_filter(edges_im, footprint=np.ones((3, 3))) * weak_edge_mask
+    edges_im += weak_edges
+    return edges_im
