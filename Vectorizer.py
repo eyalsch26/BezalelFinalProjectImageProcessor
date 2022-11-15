@@ -262,7 +262,7 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     # Computing Laplacian/Sobel on the image.
     # s = sobel_gradient(im)  # Works yet not as good as just laplacian - thick lines.
     # lap_im = sobel_gradient(s[0])[0] + sobel_gradient(s[1])[1]
-    lap_im = laplacian_image(blur_image(im, 55))  # For images from reality use: blur_image(im, 15)
+    lap_im = laplacian_image(im)  # For images from reality use: blur_image(im, 15)
     lap_im -= np.min(lap_im)  # Clipping to [0, 1].
     lap_im /= np.max(lap_im)  # Normalizing.
     # Computing thresholds.

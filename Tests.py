@@ -156,7 +156,7 @@ def laplacian_edge_detection_check(t_co):
 
 def my_edge_detection_check(t1_co, t2_co):
     # Preparing the image and the filter.
-    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Profile picture.jpg')
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD720.png')
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(im_y.shape)
@@ -165,7 +165,7 @@ def my_edge_detection_check(t1_co, t2_co):
     canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 43, f'MeDetectEdgesT{t1_co}T{t2_co}', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 43, f'AangDetectEdgesT{t1_co}T{t2_co}', True)
 
 
 def zero_crossing_check():
