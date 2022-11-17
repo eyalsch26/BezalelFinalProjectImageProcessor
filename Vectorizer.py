@@ -38,6 +38,14 @@ def laplacian_kernel():
     return np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64)
 
 
+def two_powers_kernel():
+    return np.array([[1, 2, 4], [128, 512, 8], [64, 32, 16]], dtype=np.float64)
+
+
+def one_center_kernel():
+    return np.array([[2, 2, 2], [2, 1, 2], [2, 2, 2]], dtype=np.float64)
+
+
 def kernel_padder(kernel, im_shape):
     expanded_kernel = np.zeros(im_shape, np.float64)
     top_left = int(np.round((im_shape[0] - kernel.shape[0]) * 0.5))
@@ -87,89 +95,6 @@ def laplacian_image(im):
     return im_result
 
 
-def zero_crossing(im):
-    lap_im = laplacian_image(im)
-    zr_crss = np.where(np.diff(np.sign(lap_im)))
-    return zr_crss
-
-
-def sobel_gradient(im):
-    # Creating the image of the kernel.
-    sobel_x = kernel_padder(sobel_kernel('x'), im.shape)
-    sobel_y = kernel_padder(sobel_kernel('y'), im.shape)
-    # Transforming to Fourier domain.
-    gray_im_fourier = dft2D(im)
-    sobel_x_fourier = dft2D(sobel_x)
-    sobel_y_fourier = dft2D(sobel_y)
-    # Multiplying in Fourier domain.
-    frequency_result_x = gray_im_fourier * np.abs(sobel_x_fourier)
-    frequency_result_y = gray_im_fourier * np.abs(sobel_y_fourier)
-    # Back to time domain.
-    im_result_x = idft2D(frequency_result_x)
-    im_result_y = idft2D(frequency_result_y)
-    return im_result_x, im_result_y
-
-
-def quantize_angle_image(im):
-    img = np.abs(im)
-    img[(157.5 < img) & (img <= 22.5)] = 0
-    img[(22.5 < img) & (img <= 67.5)] = 45
-    img[(67.5 < img) & (img <= 112.5)] = 90
-    img[(112.5 < img) & (img <= 157.5)] = 135
-    return img
-
-
-def non_maximum_suppression(image):
-    """
-    Finds local maximas of an image.
-    :param image: A 2D array representing an image.
-    :return: A boolean array with the same shape as the input image, where True indicates local maximum.
-    """
-    # Find local maximas.
-    neighborhood = generate_binary_structure(2, 2)
-    local_max = maximum_filter(image, footprint=neighborhood) == image
-    local_max[image < (image.max()*0.1)] = False
-
-    # Erode areas to single points.
-    lbs, num = label(local_max)
-    centers = center_of_mass(local_max, lbs, np.arange(num)+1)
-    centers = np.stack(centers).round().astype(np.int)
-
-    ret = np.zeros_like(image, dtype=np.bool)
-    ret[centers[:, 0], centers[:, 1]] = True
-
-    return ret
-
-
-def masks_for_nms_canny(nms_size=3):
-    hrz = np.zeros((nms_size, nms_size))
-    hrz[nms_size // 2] = np.ones(nms_size)
-    vtc = hrz.T
-    dce = np.eye(nms_size)
-    acc = dce[::-1]
-    return np.array([hrz, vtc, dce, acc])
-
-
-def separate_gradients(gradient_magnitude, angle_im):
-    sprt_grdt = np.zeros((GRAD_DIRECTIONS_NUM, angle_im.shape[0], angle_im.shape[1]))
-    for i in range(GRAD_DIRECTIONS_NUM):
-        sprt_grdt[i][angle_im == i * QUANTIZE_DEGREE_STEP] = 1
-        sprt_grdt[i] *= gradient_magnitude
-    return sprt_grdt
-
-
-def non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_size):
-    # Creating the masks according to nms_size.
-    masks = masks_for_nms_canny(nms_size)  # [horizontal, vertical, decent, accent].
-    # Isolating each quantize angle in the gradient magnitude image to separate image.
-    separated_gradients = separate_gradients(gradient_magnitude, im_angle_quantized)  # [horizontal, vertical, decent, accent].
-    # Applying the maxima filter.
-    result = np.zeros(gradient_magnitude.shape)
-    for i in range(GRAD_DIRECTIONS_NUM):
-        result += (maximum_filter(separated_gradients[i], footprint=masks[i]) == gradient_magnitude) * gradient_magnitude
-    return result
-
-
 def remove_isolated_pixels(im):
     # Creating the image of the kernel.
     mask = np.array([[2, 2, 2], [2, 1, 2], [2, 2, 2]], dtype=np.float64)
@@ -178,84 +103,17 @@ def remove_isolated_pixels(im):
     return im_result
 
 
-def canny_edge_detector(im, nms_size=3, k=1.4, t2_cnct=3, gaussian_kernel_size=1):
-    # Generating the gradient magnitude image.
-    blurred_im = blur_image(im, gaussian_kernel_size)
-    im_gradient_sobel = np.gradient(blurred_im)  # sobel_gradient(blurred_im)
-    im_gradient_sobel_x, im_gradient_sobel_y = im_gradient_sobel[0], im_gradient_sobel[1]
-    gradient_magnitude = np.sqrt(im_gradient_sobel_x * im_gradient_sobel_x + im_gradient_sobel_y * im_gradient_sobel_y)
-    # Generating the angle image, converting to degrees and quantizing.
-    im_angle = np.arctan2(im_gradient_sobel_y, im_gradient_sobel_x) * 180.0 / np.pi  # Angles in [-pi, pi].
-    im_angle_quantized = quantize_angle_image(im_angle)
-    # Computing the maxima image using non maximum suppression and normalizing.
-    im_maxima = non_maximum_suppression_canny(gradient_magnitude, im_angle_quantized, nms_size)
-    im_maxima_max = np.max(im_maxima)
-    im_maxima /= im_maxima_max
-    # Computing t1 and t2 and filtering according to them (Hysteresis stage).
-    grd_mean = np.mean(gradient_magnitude / im_maxima_max)
-    sigma = np.std(gradient_magnitude / im_maxima_max)  # Standard deviation.
-    t1 = im_maxima_max * 0.4  # grd_mean + k * sigma
-    t2 = t1 * 0.75  # According to "An improved Canny edge detection algorithm".
-    result = np.zeros(gradient_magnitude.shape)
-    result[im_maxima > t1] = 1  # First filtering.
-    t1_mask = result.copy()
-    t2_mask = np.zeros(gradient_magnitude.shape)  # Second filtering.
-    t2_mask[(im_maxima > t2) & (im_maxima <= t1)] = 1
-    result += maximum_filter(t1_mask, footprint=np.ones((t2_cnct, t2_cnct))) * t2_mask
-    return result
+def thin_edges(im):
+    tep = scipy.signal.convolve2d(im, two_powers_kernel(), mode='same')
+    im[(tep == 519) | (tep == 540) | (tep == 624) | (tep == 705)] = 0  # Removing spikes. E.g.: [0,0,0],[0,1,0],[1,1,1]
+    im[(tep == 574) | (tep == 760)] = 0  # Removing double edges. E.g.: [0,0,0],[1,1,1],[1,1,1]
+    return im
 
 
-def harris_corner_detector_sobel(im, w_size=5, k=0.04, corner_threshold=0.1):
-    # Computing the general form of the M matrix of the whole image.
-    im_gradient = sobel_gradient(im)
-    ix, iy = im_gradient[0], im_gradient[1]
-    ix_square = ix * ix
-    iy_square = iy * iy
-    ixiy = ix * iy
-    # Computing the M matrix entries for each window (the weighted sum of values in the window) by blurring.
-    m_ix_square = ix_square
-    m_iy_square = iy_square
-    m_ixiy = ixiy
-    # Computing the corner response value R in each pixel using the formula: R = Det(M) - k * (Trace(M))^2.
-    m_determinant = m_ix_square * m_iy_square - m_ixiy * m_ixiy
-    m_trace = m_ix_square + m_iy_square
-    r = m_determinant - k * (m_trace * m_trace)  # R is an image(shape==im.shape) where each pixel is a response value.
-    # According to the HUJI exercise.
-    max_m = non_maximum_suppression(r)
-    # result = np.where(max_m == True)
-    # coordinates = np.array(list(zip(result[1], result[0])))
-    # return coordinates
-    return max_m
-
-
-def harris_corner_detector(im, w_size=5, k=0.04, corner_threshold=0.1):
-    # Computing the general form of the M matrix of the whole image.
-    im_gradient = np.gradient(im)
-    ix, iy = im_gradient[0], im_gradient[1]
-    ix_square = ix * ix
-    iy_square = iy * iy
-    ixiy = ix * iy
-    # Computing the M matrix entries for each window (the weighted sum of values in the window) by blurring.
-    m_ix_square = blur_image(ix_square, w_size)
-    m_iy_square = blur_image(iy_square, w_size)
-    m_ixiy = blur_image(ixiy, w_size)
-    # Computing the corner response value R in each pixel using the formula: R = Det(M) - k * (Trace(M))^2.
-    m_determinant = m_ix_square * m_iy_square - m_ixiy * m_ixiy
-    m_trace = m_ix_square + m_iy_square
-    r = m_determinant - k * (m_trace * m_trace)  # R is an image(shape==im.shape) where each pixel is a response value.
-    # According to the HUJI exercise.
-    max_m = non_maximum_suppression(r)
-    # result = np.where(max_m == True)
-    # coordinates = np.array(list(zip(result[1], result[0])))
-    # return coordinates
-    return max_m
-    # # Finding the local maxima in each w*w window. TODO: Might not need to divide to windows.
-    # # Creating a binary image of r's maxima.
-    # r_threshold = corner_threshold * np.max(r)
-    # corners_binary_im = np.zeros(im.shape, np.float64)
-    # corners_binary_im[r >= r_threshold] = 1.0
-    # # corners_binary_im = corners_binary_im * r / np.max(r)
-    # return corners_binary_im
+def clean_undesired_pixels(im):
+    clean_im = remove_isolated_pixels(im)
+    cleaner_im = thin_edges(clean_im)
+    return cleaner_im
 
 
 def detect_edges(im, t1_co=0.975, t2_co=0.995):
@@ -266,7 +124,7 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     lap_im -= np.min(lap_im)  # Clipping to [0, 1].
     lap_im /= np.max(lap_im)  # Normalizing.
     # Computing thresholds.
-    t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))  # np.mean(lap_im) + t1_co * np.std(lap_im)  # t1_co
+    t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))
     t2 = t2_co * t1
     # Result according to the thresholds.
     edges_im = np.zeros(im.shape)
@@ -275,6 +133,21 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     weak_edge_mask = (lap_im >= t2) & (lap_im < t1)  # Detect weak edges which touch strong edges.
     weak_edges = maximum_filter(edges_im, footprint=np.ones((3, 3))) * weak_edge_mask
     edges_im += weak_edges
-    # Remove isolated pixels.
-    edges_im = remove_isolated_pixels(edges_im)
+    # Remove isolated pixels and spikes pixels.
+    edges_im = clean_undesired_pixels(edges_im)
     return edges_im
+
+
+def detect_corners(edges_im):
+    i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
+    tmp = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
+    c_corners = np.ones(edges_im.shape)[(tmp == 517) | (tmp == 532) | (tmp == 592) | (tmp == 577)]
+    l_corners = np.ones(edges_im.shape)[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)]
+    r_corners = np.ones(edges_im.shape)[(tmp == 526) | (tmp == 568) | (tmp == 736) | (tmp == 643)] - c_corners - l_corners
+    x_corners = np.ones(edges_im.shape)[(tmp == 682) | (tmp == 597)]
+
+
+def vectorize_image(im):
+    edges_im = detect_edges(im)
+    corners_im = detect_corners(edges_im)
+    return corners_im
