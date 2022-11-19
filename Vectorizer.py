@@ -104,15 +104,22 @@ def remove_isolated_pixels(im):
 
 
 def thin_edges(im):
+    # Removing double edges. E.g.: [0,0,0],[1,1,1],[1,1,1]
     tep = scipy.signal.convolve2d(im, two_powers_kernel(), mode='same')
-    im[(tep == 519) | (tep == 540) | (tep == 624) | (tep == 705)] = 0  # Removing spikes. E.g.: [0,0,0],[0,1,0],[1,1,1]
-    im[(tep == 574) | (tep == 760)] = 0  # Removing double edges. E.g.: [0,0,0],[1,1,1],[1,1,1]
+    im[(tep == 574) | (tep == 760)] = 0
+    # Removing spikes. E.g.: [0,0,0],[0,1,1],[1,1,1]
+    tep = scipy.signal.convolve2d(im, two_powers_kernel(), mode='same')
+    im[(tep == 542) | (tep == 632) | (tep == 737) | (tep == 647) |
+       (tep == 572) | (tep == 752) | (tep == 707) | (tep == 527)] = 0
+    # Removing spikes. E.g.: [0,0,0],[0,1,0],[1,1,1]
+    tep = scipy.signal.convolve2d(im, two_powers_kernel(), mode='same')
+    im[(tep == 519) | (tep == 540) | (tep == 624) | (tep == 705)] = 0
     return im
 
 
 def clean_undesired_pixels(im):
-    clean_im = remove_isolated_pixels(im)
-    cleaner_im = thin_edges(clean_im)
+    clean_im = thin_edges(im)
+    cleaner_im = remove_isolated_pixels(clean_im)
     return cleaner_im
 
 
@@ -138,13 +145,40 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     return edges_im
 
 
+def corner_gradient_filters():
+    hrz = np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]])
+    vtc = hrz.T
+    dsc = np.array([[-1, 0, 0], [0, 0, 0], [0, 0, 1]])
+    acc = dsc[::-1]
+    return np.array([hrz, vtc, dsc, acc])
+
+
+def corner_gradient_vectors(corners_filtered, edges_im, edges_im_shape):
+    # Creating the basic gradients. Four images to be multiply with the filtered corners.
+    s_e = np.ones((edges_im_shape[0], edges_im_shape[1], 2))
+    n_e = s_e * np.array([1, -1])
+    e = s_e * np.array([1, 0])
+    s = s_e * np.array([0, 1])
+    bsc_grd = np.array([e, s, s_e, n_e])  # Stacking in one array.
+    # Multiplying the basic gradients with the filtered ones to get the orientation of the gradient in each pixel.
+    grd_spr = np.array([bsc_grd[i] * np.expand_dims(corners_filtered[i], axis=2) for i in range(GRAD_DIRECTIONS_NUM)])
+    edg_co = np.nonzero(edges_im)
+    for i in range(GRAD_DIRECTIONS_NUM - 1):
+        for j in range(i+1, GRAD_DIRECTIONS_NUM):
+            a = np.dot(grd_spr[i][edg_co], grd_spr[j][edg_co])/(np.abs(grd_spr[i][edg_co]) * np.abs(grd_spr[j][edg_co]))
+
+
+
 def detect_corners(edges_im):
-    i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
-    tmp = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
-    c_corners = np.ones(edges_im.shape)[(tmp == 517) | (tmp == 532) | (tmp == 592) | (tmp == 577)]
-    l_corners = np.ones(edges_im.shape)[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)]
-    r_corners = np.ones(edges_im.shape)[(tmp == 526) | (tmp == 568) | (tmp == 736) | (tmp == 643)] - c_corners - l_corners
-    x_corners = np.ones(edges_im.shape)[(tmp == 682) | (tmp == 597)]
+    grd_flt = corner_gradient_filters()
+    crn_flt = np.array([scipy.signal.convolve2d(edges_im, grd_flt[i], mode='same') for i in range(4)]) * edges_im * (-1)
+    crn_grd = corner_gradient_vectors(crn_flt, edges_im, edges_im.shape)
+    # i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
+    # tmp = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
+    # c_corners = np.ones(edges_im.shape)[(tmp == 517) | (tmp == 532) | (tmp == 592) | (tmp == 577)]
+    # l_corners = np.ones(edges_im.shape)[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)]
+    # r_corners = np.ones(edges_im.shape)[(tmp == 526) | (tmp == 568) | (tmp == 736) | (tmp == 643)] - c_corners - l_corners
+    # x_corners = np.ones(edges_im.shape)[(tmp == 682) | (tmp == 597)]
 
 
 def vectorize_image(im):
