@@ -170,7 +170,7 @@ def my_edge_detection_check(t1_co, t2_co):
     FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 44, f'AangDetectEdgesImpThinT{t1_co}T{t2_co}', True)
 
 
-def vectorize_check(w, k, t):
+def vectorize_check():
     # Preparing the image and the filter.
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD720.png')
     im_yiq = Colourizer.rgb_to_yiq(im)
@@ -181,7 +181,7 @@ def vectorize_check(w, k, t):
     corners_im = Vectorizer.vectorize_image(im_y)
     im_yiq_new = np.dstack((corners_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 45, f'AangDetectCornersHarrisSobelG3', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 46, f'AangDetectCornersOnEdgesImp2', True)
 
 
 def zero_crossing_check():

@@ -259,4 +259,32 @@ def detect_edges(image_frame, gaussian_kernel_size):
 #     # # corners_binary_im = corners_binary_im * r / np.max(r)
 #     # return corners_binary_im
 #
+# def corner_angles(edges_im):
+#     grd_krn = corner_gradient_kernels()
+#     crn_ang = np.array([scipy.signal.convolve2d(edges_im, grd_krn[i], mode='same') for i in range(4)]) * edges_im
+#     cur = crn_ang[0]
+#     hrz = (90 * (1 + cur))[cur != 0]
+#     cur = crn_ang[1]
+#     vtc = (90 * (2 - cur))[cur != 0]
+#     dsc = crn_ang[2]
+#     dsc[dsc == -1] = 315
+#     dsc[dsc == 1] = 135
+#     acc = crn_ang[3]
+#     acc[acc == -1] = 45
+#     acc[acc == 1] = 225
+#     return np.array([hrz, vtc, dsc, acc])
 #
+#
+# def corner_gradient_vectors(corners_grd, edges_im, edges_im_shape):
+#     # Creating the basic gradients. Four images to be multiply with the filtered corners.
+#     s_e = np.ones((edges_im_shape[0], edges_im_shape[1], 2))
+#     n_e = s_e * np.array([1, -1])
+#     e = s_e * np.array([1, 0])
+#     s = s_e * np.array([0, 1])
+#     bsc_grd = np.array([e, s, s_e, n_e])  # Stacking in one array.
+#     # Multiplying the basic gradients with the filtered ones to get the orientation of the gradient in each pixel.
+#     grd_spr = np.array([bsc_grd[i] * np.expand_dims(corners_grd[i], axis=2) for i in range(GRAD_DIRECTIONS_NUM)])
+#     edg_co = np.nonzero(edges_im)
+#     for i in range(GRAD_DIRECTIONS_NUM - 1):
+#         for j in range(i+1, GRAD_DIRECTIONS_NUM):
+#             a = np.dot(grd_spr[i][edg_co], grd_spr[j][edg_co])/(np.abs(grd_spr[i][edg_co]) * np.abs(grd_spr[j][edg_co]))

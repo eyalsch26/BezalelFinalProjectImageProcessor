@@ -15,9 +15,11 @@ import Tests
 if __name__ == '__main__':
     # a = np.array([[[0, 0], [0, 0], [0, 0]], [[0, 0], [1, 1], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
     # b = np.array([[[0, 0], [0, 0], [0, 0]], [[0, 0], [-1, 1], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
-    # c = np.array([[0, 0, 0], [0, -np.sqrt(2), 0], [0, 0, 0]])
-    # d = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
-    # print((np.dot(a[0], b[0]) / np.abs(a[0]) * np.abs(b[0])))
-    # print(np.arctan2(a, b) * 180 / np.pi)
-    # Tests.vectorize_check(5, 0.04, 0.1)
+    # c = np.array([a, b])
+    # d = np.array([[2, 0, 0], [0, 5, 0], [1, 0, 3]])
+    # e = np.zeros((3, 3))
+    # e[d > 1] = 1
+    # print(e)
+    # print(np.linalg.norm(c, axis=2))
+    Tests.vectorize_check()
     # Tests.my_edge_detection_check(0.975, 0.995)

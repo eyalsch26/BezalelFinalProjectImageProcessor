@@ -46,6 +46,10 @@ def one_center_kernel():
     return np.array([[2, 2, 2], [2, 1, 2], [2, 2, 2]], dtype=np.float64)
 
 
+def t_x_corners_kernel():
+    return np.array([[10, 2, 10], [2, 1, 2], [10, 2, 10]], dtype=np.float64)
+
+
 def kernel_padder(kernel, im_shape):
     expanded_kernel = np.zeros(im_shape, np.float64)
     top_left = int(np.round((im_shape[0] - kernel.shape[0]) * 0.5))
@@ -145,7 +149,7 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     return edges_im
 
 
-def corner_gradient_filters():
+def corner_gradient_kernels():
     hrz = np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]])
     vtc = hrz.T
     dsc = np.array([[-1, 0, 0], [0, 0, 0], [0, 0, 1]])
@@ -153,35 +157,64 @@ def corner_gradient_filters():
     return np.array([hrz, vtc, dsc, acc])
 
 
-def corner_gradient_vectors(corners_filtered, edges_im, edges_im_shape):
+def detect_corners_0(edges_im):
+    grd_krn = corner_gradient_kernels()
+    crn_grd = np.array([scipy.signal.convolve2d(edges_im, grd_krn[i], mode='same') for i in range(4)]) * edges_im
     # Creating the basic gradients. Four images to be multiply with the filtered corners.
-    s_e = np.ones((edges_im_shape[0], edges_im_shape[1], 2))
+    s_e = np.ones((edges_im.shape[0], edges_im.shape[1], 2))
     n_e = s_e * np.array([1, -1])
     e = s_e * np.array([1, 0])
     s = s_e * np.array([0, 1])
     bsc_grd = np.array([e, s, s_e, n_e])  # Stacking in one array.
     # Multiplying the basic gradients with the filtered ones to get the orientation of the gradient in each pixel.
-    grd_spr = np.array([bsc_grd[i] * np.expand_dims(corners_filtered[i], axis=2) for i in range(GRAD_DIRECTIONS_NUM)])
-    edg_co = np.nonzero(edges_im)
-    for i in range(GRAD_DIRECTIONS_NUM - 1):
-        for j in range(i+1, GRAD_DIRECTIONS_NUM):
-            a = np.dot(grd_spr[i][edg_co], grd_spr[j][edg_co])/(np.abs(grd_spr[i][edg_co]) * np.abs(grd_spr[j][edg_co]))
-
-
-
-def detect_corners(edges_im):
-    grd_flt = corner_gradient_filters()
-    crn_flt = np.array([scipy.signal.convolve2d(edges_im, grd_flt[i], mode='same') for i in range(4)]) * edges_im * (-1)
-    crn_grd = corner_gradient_vectors(crn_flt, edges_im, edges_im.shape)
-    # i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
-    # tmp = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
-    # c_corners = np.ones(edges_im.shape)[(tmp == 517) | (tmp == 532) | (tmp == 592) | (tmp == 577)]
+    grd_spr = np.array([bsc_grd[i] * np.expand_dims(crn_grd[i], axis=2) for i in range(GRAD_DIRECTIONS_NUM)])
+    sum_grd = np.sum(grd_spr, axis=0)
+    mgt_grd = np.linalg.norm(sum_grd, axis=2)
+    corners = np.zeros(mgt_grd.shape)
+    corners[(mgt_grd > 1) & (mgt_grd <= 3)] = 1
+    i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
+    t_x_crn_flt = scipy.signal.convolve2d(edges_im, t_x_corners_kernel(), mode='same')
+    t_x_corners = np.zeros(edges_im.shape)
+    t_x_corners[(t_x_crn_flt == 7) | (t_x_crn_flt == 9) | (t_x_crn_flt == 41)] = 1
+    y_crn = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
+    y_corners = np.zeros(edges_im.shape)
+    y_corners[(y_crn == 549) | (y_crn == 660) | (y_crn == 594) | (y_crn == 585) |
+              (y_crn == 586) | (y_crn == 553) | (y_crn == 676) | (y_crn == 658)] = 1
+    bolt_crn = np.zeros(edges_im.shape)
+    bolt_crn[(y_crn == 556) | (y_crn == 688) | (y_crn == 673) | (y_crn == 618) |
+             (y_crn == 706) | (y_crn == 523) | (y_crn == 538) | (y_crn == 646)] = 1
+    # c_corners = np.zeros(edges_im.shape)
+    # c_corners[(y_crn == 517) | (y_crn == 532) | (y_crn == 592) | (y_crn == 577)] = 1
+    corners += i_corners + t_x_corners + y_corners - bolt_crn
+    return corners
     # l_corners = np.ones(edges_im.shape)[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)]
     # r_corners = np.ones(edges_im.shape)[(tmp == 526) | (tmp == 568) | (tmp == 736) | (tmp == 643)] - c_corners - l_corners
     # x_corners = np.ones(edges_im.shape)[(tmp == 682) | (tmp == 597)]
 
 
+def detect_corners(edges_im):
+    corners = np.zeros(edges_im.shape)
+    i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
+    tmp = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
+    c_corners = np.zeros(edges_im.shape)
+    c_corners[(tmp == 517) | (tmp == 532) | (tmp == 592) | (tmp == 577)] = 1
+    l_corners = np.zeros(edges_im.shape)
+    l_corners[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)] = 1
+    r_corners = np.zeros(edges_im.shape)
+    r_corners[(tmp == 518) | (tmp == 524) | (tmp == 536) | (tmp == 560) |
+              (tmp == 608) | (tmp == 704) | (tmp == 641) | (tmp == 515)] = 1
+    t_x_crn_flt = scipy.signal.convolve2d(edges_im, t_x_corners_kernel(), mode='same')
+    t_x_corners = np.zeros(edges_im.shape)
+    t_x_corners[(t_x_crn_flt == 7) | (t_x_crn_flt == 9) | (t_x_crn_flt == 31) | (t_x_crn_flt == 41)] = 1
+    y_corners = np.zeros(edges_im.shape)
+    y_corners[(tmp == 549) | (tmp == 660) | (tmp == 594) | (tmp == 585) |
+              (tmp == 586) | (tmp == 553) | (tmp == 676) | (tmp == 658)] = 1
+    corners += i_corners + c_corners + l_corners + r_corners + t_x_corners + y_corners
+    return corners
+
+
 def vectorize_image(im):
     edges_im = detect_edges(im)
     corners_im = detect_corners(edges_im)
-    return corners_im
+    # return corners_im
+    return 0.5 * (corners_im + edges_im)
