@@ -172,7 +172,7 @@ def my_edge_detection_check(t1_co, t2_co):
 
 def vectorize_check():
     # Preparing the image and the filter.
-    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD720.png')
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Shape_0.png')
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(im_y.shape)
@@ -181,7 +181,27 @@ def vectorize_check():
     corners_im = Vectorizer.vectorize_image(im_y)
     im_yiq_new = np.dstack((corners_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 46, f'AangDetectCornersOnEdgesImp2', True)
+    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 46, f'Shape0DetectCornersOnEdgesHD720', True)
+
+
+def show_reel(in_path, out_path, start, end, zero_pad):
+    n = end - start
+    for im_file_idx in range(1, n+1):
+        n_padded = f'0{im_file_idx}'
+        while (len(n_padded) < zero_pad):
+            n_padded = f'0{n_padded}'
+        # Preparing the image and the filter.
+        im = FileManager.import_image(f'{in_path}{n_padded}.png')
+        im_yiq = Colourizer.rgb_to_yiq(im)
+        im_y = im_yiq[:, :, 0]
+        im_i = np.zeros(im_y.shape)
+        im_q = np.zeros(im_y.shape)
+        # Computing the image's edges.
+        corners_im = Vectorizer.vectorize_image(im_y)
+        im_yiq_new = np.dstack((corners_im, im_i, im_q))
+        im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+        image_frame = Colourizer.rgb_to_gray(im_rgb)
+        plt.imsave(out_path + n_padded + '.png', image_frame, cmap='gray')
 
 
 def zero_crossing_check():

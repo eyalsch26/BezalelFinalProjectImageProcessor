@@ -217,4 +217,6 @@ def vectorize_image(im):
     edges_im = detect_edges(im)
     corners_im = detect_corners(edges_im)
     # return corners_im
-    return 0.5 * (corners_im + edges_im)
+    # return 0.5 * (corners_im + edges_im)
+    p = np.random.randint(1, 11) / 10  # For showreel
+    return p * (corners_im + edges_im)  # For showreel
