@@ -7,7 +7,8 @@ import Colourizer
 
 
 FRAMES_DIR_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input'
-FRAMES_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'
+VEC_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'
+RAST_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
 FRAME_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\\frame_0TryG2.png'
 
 

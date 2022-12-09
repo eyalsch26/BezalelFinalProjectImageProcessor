@@ -10,32 +10,31 @@ DIMS = 2
 
 def curve_partitions(bezier_control_points):
     """
-    Sums up the Manhattan distances between two sequential Bezier control points. Since the Bezier curve preserves
+    Sums up the Euclidean distances between two sequential Bezier control points. Since the Bezier curve preserves
     the convex attribute (the curve itself is always inside the polygon shape defined by the 4 Bezier control
-    points) it's length is bounded from above by the Manhattan distance between each sequential control points. This
+    points) it's length is bounded from above by the Euclidean distance between each sequential control points. This
     sum is the number of partitions to divide the curve to. This way the same pixels may repeat but gaps in the line
     are prevented. The calculation is preformed with matrix multiplication as follows:
     p0x p1x p2x p3x     @       1   0   0       =       p0x-p1x   p1x-p2x   p2x-p3x
     p0y p1y p2y p3y             -1  1   0               p0y-p1y   p1y-p2y   p2y-p3y
                                 0   -1  1
                                 0   0   -1
-    At the end we sum all the matrix entries.
+    At the end we raise the matrix entries by the power of 2, sum along the 1 axis, calculate the root and sum again.
     :param bezier_control_points: A numpy array with shape (2, 4).
     :return: The number of partitions to divide the curve with dtype=np.float64.
     """
     arithmetic_mat = np.eye(BZ_CTRL_PTS, BZ_DEG) - np.eye(BZ_CTRL_PTS, BZ_DEG, -1)  # TODO: Check for more pythonic way to make more efficient.
     dist_mat = np.abs(bezier_control_points.T @ arithmetic_mat)
-    n = np.array([np.sum(dist_mat)])[0]  # TODO: Check for simpler way to return a scalar. Otherwise gives warning.
+    n = np.sum(np.sqrt(np.sum(np.square(dist_mat), axis=1)))
     return n
 
 
-def t_sparse_vec(t_orig, t_orig_len):
+def t_sparse_vec(t_orig):
     """
     Given an array of n+1 values (t0, t1, ..., tn) distributed uniformly in the closed interval [0, 1] a sparse
     vector is computed with shape (4 * (n+1),) where each 4 subsequent entries are in the form of 1, ti, ti**2,
     ti**3 where i runs from 0 to n. For explanation on implementation details see the notebook.
     :param t_orig: A numpy array with shape (n+1,).
-    :param t_orig_len: An integer (np.uint8) which represents the length of the t_orig. Actually its value is n+1.
     :return: A Numpy array with shape (4*(n+1),) of the partition entries powered to their index mod 4 as follows:
     [1, t0, t0^2, t0^3, 1, t1, t1^2, t1^3, ... , 1, tn, tn^2, tn^3].
     """
@@ -69,7 +68,8 @@ def bezier_curve_points(bezier_control_points):
     Bernstien's polynomials and implemented in a matrix notation.
     :param bezier_control_points: A Numpy array with shape (4, 2) consisting of pairs of np.float64 entries where the
     first entry in each pair represents the x coordinate and the second entry represents the y coordinate of the i'th
-    point.
+    point. The entries can be fractional (steps of 0.5) since fractional control points improves accuracy. The result
+    is rounded for whole (integers) pixel coordinates.
     :return: A Numpy array with shape (n+1, 2) which represents the vector of points to draw on the canvas where each
     point is a pair of x coordinate and y coordinate.
     """
@@ -77,13 +77,11 @@ def bezier_curve_points(bezier_control_points):
     n = curve_partitions(bezier_control_points)
     pts_num = np.uint16(n + 1)
     t_orig = np.arange(pts_num) / n  # Shape=(n+1,) TODO: Check np.linspace(s, e, n, e_ex=True, ...). Might be faster.
-    t_vec = t_sparse_vec(t_orig, pts_num)  # shape (4*(n+1),).
+    t_vec = t_sparse_vec(t_orig)  # shape (4*(n+1),).
     bez_mat_ctr_p = bezier_mat_by_control_points(bezier_control_points)  # shape=(2, 4).
-    bez_mat_ctr_p_blks = np.repeat(bez_mat_ctr_p.reshape(1, 2, 4), pts_num, axis=0)  # .reshape((2*(n.astype(
-    # np.uint8) + 1),
-    # t_vec.size))
+    bez_mat_ctr_p_blks = np.repeat(bez_mat_ctr_p.reshape(1, 2, 4), pts_num, axis=0)  # .reshape((2*(n.astype(np.uint8) + 1), t_vec.size))
     bez_mat_ctr_p_sparse = scipy.sparse.block_diag(bez_mat_ctr_p_blks)
-    pixels = (bez_mat_ctr_p_sparse @ t_vec).reshape((pts_num, 2))
+    pixels = np.round((bez_mat_ctr_p_sparse @ t_vec).reshape((pts_num, 2)))
     return pixels
 
 

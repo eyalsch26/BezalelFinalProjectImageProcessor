@@ -10,6 +10,7 @@ GAUSSIAN_KERNEL = 9
 HARRIS_W = 5
 GRAD_DIRECTIONS_NUM = 4
 QUANTIZE_DEGREE_STEP = 45
+MAX_CURVE_TURNS = 5
 
 
 def gaussian_kernel(kernel_size):
@@ -28,6 +29,18 @@ def gaussian_kernel(kernel_size):
 
 
 def sobel_kernel(direction='x'):
+    """
+    Builds a Sobel kernel in the given direction:
+    For horizontal derivatives (in the x axis): [1, 0, -1]
+                                                [2, 0, -2]
+                                                [1, 0, -1]
+    For vertical derivatives (in the y axis):   [1, 2, 1]
+                                                [0, 0, 0]
+                                                [-1, -2, -1].
+    :param direction: The desired direction to derive. The orthogonal direction is blurred.
+    :return: A numpy array with shape (3, 3): A Sobel kernel with respect to the given differentiation direction.
+    The entries are of type float64.
+    """
     kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.float64)  # / 4.0
     if direction == 'y':
         return kernel.T
@@ -35,18 +48,50 @@ def sobel_kernel(direction='x'):
 
 
 def laplacian_kernel():
+    """
+    Builds the Laplacian kernel matrix: [0, 1, 0]
+                                        [1, 4, 1]
+                                        [0, 1, 0]
+    The Laplacian is the divergence of the gradient (sum of partial derivatives).
+    :return: A numpy array with shape (3, 3): The Laplacian kernel matrix. The entries are of type float64.
+    """
     return np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64)
 
 
 def two_powers_kernel():
+    """
+    Builds a kernel matrix constructed in spiral form of the powers of two: [1,   2,   4]
+                                                                            [128, 512, 8]
+                                                                            [64,  32, 16].
+    The motivation is to detect specific patterns by distinct numbers, created by convolving the above kernel with
+    the image. Each pattern sums up to a distinct number.
+    :return: A numpy array with shape (3, 3). The entries are of type float64.
+    """
     return np.array([[1, 2, 4], [128, 512, 8], [64, 32, 16]], dtype=np.float64)
 
 
 def one_center_kernel():
+    """
+    Builds a kernel matrix with twos on the outer border and one in the center: [2, 2, 2]
+                                                                                [2, 1, 2]
+                                                                                [2, 2, 2].
+    The motivation is to detect the initial corners (the starting point of a line), created by convolving the above
+    kernel with the image. Each initial corner (referred to as "i corner" in this project) sums up to 3 exactly.
+    :return: A numpy array with shape (3, 3). The entries are of type float64.
+    """
     return np.array([[2, 2, 2], [2, 1, 2], [2, 2, 2]], dtype=np.float64)
 
 
 def t_x_corners_kernel():
+    """
+    Builds a kernel matrix constructed in the following way: [10, 2, 10]
+                                                             [2,  1, 2]
+                                                             [10, 2, 10].
+    The motivation is to detect the cross corners and "t junctions", created by convolving the above
+    kernel with the image. Each corner (referred to as "t corner" or "x corner" in this project) sums up to 7 and 31
+    or 9 and 41 respectively exactly.
+    :return: A numpy array with shape (3, 3). The entries are of type float64.
+    """
     return np.array([[10, 2, 10], [2, 1, 2], [10, 2, 10]], dtype=np.float64)
 
 
@@ -213,10 +258,21 @@ def detect_corners(edges_im):
     return corners
 
 
+def trace_edges_to_bezier(edges_im, corner_im):
+    corners_num = np.sum(corner_im)
+    cur_edges_im = edges_im
+
+
+
+def pair_corners(edges_im, corners_im):
+    pass
+
+
 def vectorize_image(im):
     edges_im = detect_edges(im)
     corners_im = detect_corners(edges_im)
-    # return corners_im
+    corners_pairs = pair_corners(edges_im, corners_im)
+    return corners_im
     # return 0.5 * (corners_im + edges_im)
-    p = np.random.randint(1, 11) / 10  # For showreel
-    return p * (corners_im + edges_im)  # For showreel
+    # p = np.random.randint(1, 11) / 10  # For showreel
+    # return p * (corners_im + edges_im)  # For showreel

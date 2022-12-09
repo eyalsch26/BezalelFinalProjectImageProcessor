@@ -8,8 +8,15 @@ import FileManager, EdgeDetector, Colourizer, Rasterizer, Vectorizer
 
 # Original
 FRAMES_DIR_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input'
-FRAMES_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'
+VEC_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Vector'
+RAST_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
 BLUR_RATIO = 0.25
+
+# --------------------------------------------------- Hot Keys ---------------------------------------------------------
+# Ctrl + B : Go to declaration/usage of function.
+# Alt + Enter : Generate function from statement.
+# Ctrl + Shift + Up/Down : Moves the line(s) up or down respectively.
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 # def manipulate_image(image_frame, mask_flag=0):
@@ -44,7 +51,7 @@ def sanity_check_rgb_to_yiq_and_back():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog.jpg')
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_rgb = (255 * Colourizer.yiq_to_rgb(im_yiq)).astype(np.uint8)
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 1, 'DogRgbToYiqAndBack', False)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 1, 'DogRgbToYiqAndBack', False)
 
 
 # Vectorizer -----------------------------------------------------------------------------------------------------------
@@ -59,7 +66,7 @@ def sanity_check_rgb_to_yiq_to_fourier_and_back():
     im_y_time = EdgeDetector.idft2D(fourier_im_y)
     im_yiq_new = np.dstack((im_y_time, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'DogRgbToYiqAndBack', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 2, 'DogRgbToYiqAndBack', True)
 
 
 # Works.
@@ -81,7 +88,7 @@ def sanity_check_fourier_filter():
     im_y_time = EdgeDetector.idft2D(fourier_im_y_filtered)
     im_yiq_new = np.dstack((im_y_time, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 3, 'DogRgbToYiqAndBack', False)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 3, 'DogRgbToYiqAndBack', False)
 
 
 # Works. Does'nt crops the image.
@@ -107,7 +114,7 @@ def sanity_check_edge_detection_fourier():
     im_edges = np.sqrt(np.power(im_gradient_x, 2) + np.power(im_gradient_y, 2))
     im_yiq_new = np.dstack((im_edges, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 0, 'AangGrayEdgesGaussian1', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 0, 'AangGrayEdgesGaussian1', True)
 
 
 # Works. Crops the image.
@@ -132,7 +139,7 @@ def sanity_check_edge_detection_convolution():
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
     # FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb_x, 5, 'AangGrayEdgesX', True)
     # FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb_y, 5, 'AangGrayEdgesY', True)
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 2, 'AangGrayEdgesGradientConvolutionGaussian3', True)
 
 
 # Works. (In current state: t1 = t_co * (np.std(im_y_laplacian) + np.mean(im_y_laplacian))).
@@ -152,7 +159,7 @@ def laplacian_edge_detection_check(t_co):
     im_y_laplacian[im_y_laplacian < t1] = 0
     im_yiq_new = np.dstack((im_y_laplacian, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 40, f'AangLaplacian{t_co}', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 40, f'AangLaplacian{t_co}', True)
 
 
 # Works. Edges are not necessarily one pixel wide (but improved).
@@ -167,7 +174,7 @@ def my_edge_detection_check(t1_co, t2_co):
     canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 44, f'AangDetectEdgesImpThinT{t1_co}T{t2_co}', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 44, f'AangDetectEdgesImpThinT{t1_co}T{t2_co}', True)
 
 
 def vectorize_check():
@@ -181,7 +188,7 @@ def vectorize_check():
     corners_im = Vectorizer.vectorize_image(im_y)
     im_yiq_new = np.dstack((corners_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 46, f'Shape0DetectCornersOnEdgesHD720', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 46, f'Shape0DetectCornersOnEdgesHD720', True)
 
 
 def show_reel(in_path, out_path, start, end, zero_pad):
@@ -217,7 +224,7 @@ def zero_crossing_check():
     im_y_new[zero_crossing_coordinates[0], zero_crossing_coordinates[1]] = 1
     im_yiq_new = np.dstack((im_y_new, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 34, 'AangZeroCrossingHD540', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 34, 'AangZeroCrossingHD540', True)
 
 
 def canny_detector_check(k, g):
@@ -231,7 +238,7 @@ def canny_detector_check(k, g):
     canny_edges_im = Vectorizer.canny_edge_detector(im_y, k=k, gaussian_kernel_size=g)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 33, 'AangCannyGauss' + str(g) + 'k' + str(k) + 'HD540', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 33, f'AangCannyGauss{g}k{k}HD540', True)
 
 
 
@@ -247,7 +254,7 @@ def corner_detection_check():
     corner_image = Vectorizer.harris_corner_detector(im_y, 5, 0.04, 0.1)
     im_yiq_new = np.dstack((corner_image, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 27, 'AangCornersFromLaplacian', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 27, 'AangCornersFromLaplacian', True)
 
 
 def corner_detection_sobel_check():
@@ -261,13 +268,13 @@ def corner_detection_sobel_check():
     corner_image = Vectorizer.harris_corner_detector_sobel(im_y, 3, 0.04, 0.1)
     im_yiq_new = np.dstack((corner_image, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 30, 'AangCornersSobel', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 30, 'AangCornersSobel', True)
 
 
 # Rasterizer -----------------------------------------------------------------------------------------------------------
 def t_sparse_vec_check():
     t_orig = np.arange(10 + 1) / 10
-    ts_sparse = Rasterizer.t_sparse_vec(t_orig, len(t_orig))
+    ts_sparse = Rasterizer.t_sparse_vec(t_orig)
     print(ts_sparse)
 
 
@@ -279,6 +286,8 @@ def diag_blocks_check():
 
 def rasterizer_check():
     brd = np.zeros(1080 * 1920).reshape((1080, 1920))
+    # b_c_p = np.array([[539, 957], [541, 958.5], [538, 960.5], [540, 962]])
+    # b_c_p = np.array([[540, 960], [270, 480], [270, 1440], [540, 960]])
     b_c_p = np.array([[0, 0], [1079, 0], [1079, 1919], [0, 1919]])
     b_p = Rasterizer.bezier_curve_rasterizer(b_c_p)
     # brd_clrd = np.put_along_axis(brd, b_p, 1, axis=2)
@@ -286,7 +295,7 @@ def rasterizer_check():
     im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
     img = np.dstack((b_p, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(img))
-    FileManager.save_image(FileManager.FRAMES_DIR_OUT, im_rgb, 0, 'RasterizerBezierCurve', True)
+    FileManager.save_image(FileManager.RAST_DIR_OUT, im_rgb, 5, 'RasterizerBezierCurve', True)
 
 
 # def find_contour(image):
