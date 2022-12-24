@@ -258,10 +258,70 @@ def detect_corners(edges_im):
     return corners
 
 
-def trace_edges_to_bezier(edges_im, corner_im):
-    corners_num = np.sum(corner_im)
-    cur_edges_im = edges_im
+def check_point_in_bounds(point, shape):
+    """
+    Verifies that the given point's coordinates are within the boundaries of the given shape.
+    :param point: A numpy array with shape (, 2). The entries are of type float64.  TODO: Make sure the shape is true.
+    :param shape: A tuple with shape (, 2). For example (1080, 1920).
+    :return: Boolean. True if the point's coordinates are within the given shape and False otherwise.
+    """
+    row_in_bounds = point[0] >= 0 & point[0] < shape[0]
+    column_in_bounds = point[1] >= 0 & point[1] < shape[1]
+    return row_in_bounds & column_in_bounds
 
+
+def estimate_ctrl_p_1(edges_im, ctrl_p_0):
+    """
+    Estimates the position of the second Bezier control point. One of the properties of Bezier curves is that the
+    closest points to the first and last control points has the same gradient as the line formed by the first and
+    second (or third and last respectively) control points. Thus, a rough estimation of the second and third control
+    points will be along the lines described above. Boundaries are checked. A corner or an empty pixel indicates a
+    possible position for the control point.
+    :param edges_im: A numpy array with shape (720, 1280). The entries are of type float64.
+    :param ctrl_p_0: A numpy array with shape (, 2). The entries are of type float64.
+    :return: A numpy array with shape (, 2). The entries are of type float64. The array represents the estimation of
+    the second Bezier control point.
+    """
+    vec_p_1 = np.argmax(edges_im[ctrl_p_0[0] - 1:ctrl_p_0[0] + 1, ctrl_p_0[1] - 1:ctrl_p_0[1] + 1])
+    vec_p_1 = np.asarray(np.unravel_index(vec_p_1, (3, 3))) - np.array([1, 1])
+    ctrl_p_1 = vec_p_1 + ctrl_p_0
+    in_bounds = check_point_in_bounds(ctrl_p_1 + vec_p_1, edges_im.shape)
+    while in_bounds:
+        ctrl_p_1 += vec_p_1
+        pxl_is_edge = edges_im[ctrl_p_1[0]][ctrl_p_1[1]] > 1  # Checks if the current pixel is an edge and not 0 or corner.
+        if not pxl_is_edge:  # If the pixel is a corner or 0.
+            break
+        in_bounds = check_point_in_bounds(ctrl_p_1 + vec_p_1, edges_im.shape)
+    return ctrl_p_1
+
+
+def trace_edge_to_bezier(edges_im, corner_im, ctrl_p_0):
+    cur_edges_im = edges_im
+    ctrl_p_1 = estimate_ctrl_p_1(edges_im, ctrl_p_0)
+    next_pxl =
+
+
+def trace_edges_to_bezier(edges_im, corner_im):
+    bezier_control_points = np.zeros((1, 2, 4))
+    cur_corners_im = corner_im
+    cur_edges_im = 2 * edges_im - corner_im
+    while np.max(cur_corners_im) > 0:
+        # Defining the first bezier point.
+        ctrl_p_0 = np.asarray(np.unravel_index(np.argmax(cur_corners_im), corner_im.shape))
+        # Computing the second bezier point. Might be adjusted later.
+        vec_p_1 = np.asarray(np.unravel_index(np.argmax(cur_edges_im[ctrl_p_0[0]-1:ctrl_p_0[0]+1,
+                                                        ctrl_p_0[1]-1:ctrl_p_0[1]+1]), (3, 3))) - np.array([1, 1])
+        ctrl_p_1 = 2 * vec_p_1 + ctrl_p_0  # TODO: Index out of bounds.
+        while cur_edges_im[ctrl_p_1[0]][ctrl_p_1[1]] > 0:  # TODO: Index out of bounds.
+            ctrl_p_1 += vec_p_1
+        turns_num = 1
+
+        corners_num = np.sum(cur_corners_im)
+        cur_curve = np.zeros((3, 3))
+        # Updating the current corner image by removing isolated corners.
+
+        cur_corners_im *= remove_isolated_pixels(cur_edges_im)
+    return bezier_control_points
 
 
 def pair_corners(edges_im, corners_im):
