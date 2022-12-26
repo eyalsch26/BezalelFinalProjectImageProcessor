@@ -279,8 +279,9 @@ def estimate_ctrl_p_1(edges_im, ctrl_p_0):
     possible position for the control point.
     :param edges_im: A numpy array with shape (720, 1280). The entries are of type float64.
     :param ctrl_p_0: A numpy array with shape (, 2). The entries are of type float64.
-    :return: A numpy array with shape (, 2). The entries are of type float64. The array represents the estimation of
-    the second Bezier control point.
+    :return: A tuple of numpy arrays with shape (, 2) where each numpy array with shape (, 2). The entries are of type
+    float64. The first array represents the estimation of the second Bezier control point and the second represents
+    the vector with the direction from the first control point to the second one.
     """
     vec_p_1 = np.argmax(edges_im[ctrl_p_0[0] - 1:ctrl_p_0[0] + 1, ctrl_p_0[1] - 1:ctrl_p_0[1] + 1])
     vec_p_1 = np.asarray(np.unravel_index(vec_p_1, (3, 3))) - np.array([1, 1])
@@ -292,13 +293,13 @@ def estimate_ctrl_p_1(edges_im, ctrl_p_0):
         if not pxl_is_edge:  # If the pixel is a corner or 0.
             break
         in_bounds = check_point_in_bounds(ctrl_p_1 + vec_p_1, edges_im.shape)
-    return ctrl_p_1
+    return ctrl_p_1, vec_p_1
 
 
 def trace_edge_to_bezier(edges_im, corner_im, ctrl_p_0):
     cur_edges_im = edges_im
-    ctrl_p_1 = estimate_ctrl_p_1(edges_im, ctrl_p_0)
-    next_pxl =
+    ctrl_p_1, prev_vec = estimate_ctrl_p_1(edges_im, ctrl_p_0)
+    last_pxl = ctrl_p_1 - prev_vec
 
 
 def trace_edges_to_bezier(edges_im, corner_im):

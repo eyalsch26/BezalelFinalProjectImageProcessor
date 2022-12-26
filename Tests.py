@@ -16,6 +16,7 @@ BLUR_RATIO = 0.25
 # Ctrl + B : Go to declaration/usage of function.
 # Alt + Enter : Generate function from statement.
 # Ctrl + Shift + Up/Down : Moves the line(s) up or down respectively.
+# Lambda expression: a = x if b < c else y.
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -296,6 +297,88 @@ def rasterizer_check():
     img = np.dstack((b_p, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(img))
     FileManager.save_image(FileManager.RAST_DIR_OUT, im_rgb, 5, 'RasterizerBezierCurve', True)
+
+
+def stroke_rasterizer_check():
+    b_c_p = np.array([[270, 480], [810, 480], [810, 1440], [270, 1440]])
+    b_p = Rasterizer.stroke_rasterizer(b_c_p, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                       strength_style='uniform')
+    im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
+    im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
+    img = np.dstack((b_p, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(img))
+    FileManager.save_image(FileManager.RAST_DIR_OUT, im_rgb, 9, f'RasterizerStroke', True)
+
+
+def face_stroke_rasterizer_check():
+    b_c_p_0 = np.array([[404, 719], [39, 709], [9, 1219], [404, 1199]])
+    b_c_p_1 = np.array([[424, 724], [639, 669], [699, 729], [863, 819]])
+    b_c_p_2 = np.array([[873, 829], [909, 824], [924, 1129], [579, 1139]])
+    b_c_p_3 = np.array([[459, 1169], [404, 1199], [479, 1304], [639, 1164]])
+    b_c_p_4 = np.array([[434, 889], [399, 939], [444, 989], [464, 1059]])
+    b_c_p_5 = np.array([[414, 722], [394, 744], [389, 839], [429, 839]])
+    b_c_p_6 = np.array([[434, 839], [704, 754], [719, 784], [654, 904]])
+    b_c_p_7 = np.array([[724, 794], [734, 809], [734, 909], [714, 974]])
+    b_c_p_8 = np.array([[519, 954], [464, 904], [464, 1014], [514, 959]])
+    b_p_0 = Rasterizer.stroke_rasterizer(b_c_p_0, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_1 = Rasterizer.stroke_rasterizer(b_c_p_1, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_2 = Rasterizer.stroke_rasterizer(b_c_p_2, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_3 = Rasterizer.stroke_rasterizer(b_c_p_3, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_4 = Rasterizer.stroke_rasterizer(b_c_p_4, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_5 = Rasterizer.stroke_rasterizer(b_c_p_5, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_6 = Rasterizer.stroke_rasterizer(b_c_p_6, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_7 = Rasterizer.stroke_rasterizer(b_c_p_7, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p_8 = Rasterizer.stroke_rasterizer(b_c_p_8, radius_min=2, radius_max=3, texture='random', blur_kernel=3,
+                                         strength_style='uniform')
+    b_p = np.clip(b_p_0 + b_p_1 + b_p_2 + b_p_3 + b_p_4 + b_p_5 + b_p_6 + b_p_7 + b_p_8, 0, 1)
+    im_i = np.zeros((1080, 1920))
+    im_q = np.zeros((1080, 1920))
+    img = np.dstack((b_p, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(img))
+    FileManager.save_image(FileManager.RAST_DIR_OUT, im_rgb, 9, f'RasterizerStrokeFace', True)
+
+
+def sequence_face_stroke_rasterizer_check():
+    b_c_p_0 = np.array([[404, 719], [39, 709], [9, 1219], [404, 1199]])
+    b_c_p_1 = np.array([[424, 724], [639, 669], [699, 729], [863, 819]])
+    b_c_p_2 = np.array([[873, 829], [909, 824], [924, 1129], [579, 1139]])
+    b_c_p_3 = np.array([[459, 1169], [404, 1199], [479, 1304], [639, 1164]])
+    b_c_p_4 = np.array([[434, 889], [399, 939], [444, 989], [464, 1059]])
+    b_c_p_5 = np.array([[414, 722], [394, 744], [389, 839], [429, 839]])
+    b_c_p_6 = np.array([[434, 839], [704, 754], [719, 784], [654, 904]])
+    b_c_p_7 = np.array([[724, 794], [734, 809], [734, 909], [714, 974]])
+    b_c_p_8 = np.array([[519, 954], [464, 904], [464, 1014], [514, 959]])
+    b_c_p_arr = np.array([b_c_p_0, b_c_p_1, b_c_p_2, b_c_p_3, b_c_p_4, b_c_p_5, b_c_p_6, b_c_p_7, b_c_p_8])
+    strokes_num = 9
+    sec = 5
+    fps = 24
+    for s in range(sec):
+        for f in range(fps):
+            r_v = np.random.randint(-5, 5, size=(strokes_num, 4, 2))
+            r_m = np.random.randint(1, 3, size=strokes_num)
+            r_d = np.random.randint(1, 3, size=strokes_num)
+            b_c = np.zeros((1080, 1920))
+            for i in range(strokes_num):
+                cur_b_c_p = b_c_p_arr[i] + r_v[i]
+                cur_b_c = Rasterizer.stroke_rasterizer(cur_b_c_p, radius_min=r_m[i], radius_max=(r_m[i] + r_d[i]),
+                                                       texture='random', blur_kernel=3, strength_style='uniform')
+                b_c += cur_b_c
+            b_c = np.clip(b_c, 0, 1)
+            im_i = np.zeros((1080, 1920))
+            im_q = np.zeros((1080, 1920))
+            img = np.dstack((b_c, im_i, im_q))
+            im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(img))
+            f_s = f'0{f}' if len(str(f)) < 2 else str(f)
+            FileManager.save_image(FileManager.RAST_DIR_OUT, im_rgb, 0, f'FaceSequence{s}{f_s}', True)
+    return
 
 
 # def find_contour(image):

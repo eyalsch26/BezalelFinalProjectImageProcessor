@@ -16,15 +16,20 @@ if __name__ == '__main__':
     # a = np.array([[[0.5, 0.001], [0, 0], [0, 0]], [[0, 0], [1.1, 1.9], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
     # b = np.array([[[0, 0], [0, 0], [0, 0]], [[0, 0], [-1, 1], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
     # c = np.array([a, b])
-    d = np.array([[1, 0, 0], [0, 1, 0], [0, 1, 0]])
-    e = np.zeros((7, 7))
-    e[2:5, 2:5] = d
+    # d = np.array([[1, 0, 0], [0, 1, 0], [0, 1, 0]])
+    # r = 2
+    # e = np.ones((2 * r - 1, 2 * r - 1))
+    # for row in range(r - 1):
+    #     for column in range(r - 1):
+    #         dist = np.round(np.sqrt((r - row) ** 2 + (r - column) ** 2))
+    #         if dist > r:
+    #             e[row][column] = 0
+    # e *= e[::-1]
+    # e *= e[::, ::-1]
     # f = np.unravel_index(np.argmax(e[2:5, 2:5]), e.shape)
-    print(e)
-    # print(f)
     # Tests.vectorize_check()
     # Tests.show_reel('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Render Test\HD720\Aang_Sequence.',
     #                 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\SequenceTest\Aang_Sequence_Res.',
     #                 0, 130, 4)
-    # Tests.rasterizer_check()
+    Tests.sequence_face_stroke_rasterizer_check()
     # Tests.my_edge_detection_check(0.975, 0.995)
