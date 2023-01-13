@@ -17,7 +17,9 @@ if __name__ == '__main__':
     # b = np.array([[[0, 0], [0, 0], [0, 0]], [[0, 0], [-1, 1], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
     # c = np.array([a, b])
     # d = np.array([[1, 0, 0], [0, 1, 0], [0, 1, 0]])
-    # r = 2
+    r = np.arange(25).reshape((5, 5))
+    h = np.argwhere(r[1:4, 1:4] == 6)
+    print(h)
     # e = np.ones((2 * r - 1, 2 * r - 1))
     # for row in range(r - 1):
     #     for column in range(r - 1):
@@ -31,5 +33,5 @@ if __name__ == '__main__':
     # Tests.show_reel('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Render Test\HD720\Aang_Sequence.',
     #                 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\SequenceTest\Aang_Sequence_Res.',
     #                 0, 130, 4)
-    Tests.sequence_face_stroke_rasterizer_check()
+    # Tests.sequence_face_stroke_rasterizer_check()
     # Tests.my_edge_detection_check(0.975, 0.995)

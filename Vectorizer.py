@@ -296,16 +296,32 @@ def estimate_ctrl_p_1(edges_im, ctrl_p_0):
     return ctrl_p_1, vec_p_1
 
 
+def find_next_pixel(edges_im, pxl):
+    # TODO: Check for out of bounds.
+    neighborhood = edges_im[pxl[0] - 1:pxl[0] + 1, pxl[1] - 1:pxl[1] + 1]
+    # np.argwhere(cur_edges_im[next_pxl[0] - 1:next_pxl[0] + 2, next_pxl[1] - 1:next_pxl[1] + 2] == 1)
+
+
 def trace_edge_to_bezier(edges_im, corner_im, ctrl_p_0):
     cur_edges_im = edges_im
+    cur_curve_im = np.zeros(edges_im.shape)
+    curve_len = 0
     ctrl_p_1, prev_vec = estimate_ctrl_p_1(edges_im, ctrl_p_0)
-    last_pxl = ctrl_p_1 - prev_vec
+    next_pxl = ctrl_p_1 - prev_vec
+    cur_pxl = ctrl_p_0
+    # visited = {ctrl_p_0, last_pxl}
+    while cur_pxl != ctrl_p_1:
+        cur_curve_im[cur_pxl[0]][cur_pxl[1]] = 1
+        cur_pxl += prev_vec
+        curve_len += 1
+    cur_edges_im -= cur_curve_im
+    next_pxl = find_next_pixel(cur_edges_im, next_pxl)
 
 
 def trace_edges_to_bezier(edges_im, corner_im):
     bezier_control_points = np.zeros((1, 2, 4))
     cur_corners_im = corner_im
-    cur_edges_im = 2 * edges_im - corner_im
+    cur_edges_im = 2 * edges_im - corner_im  # Edges=2. Corners=1. Empty=0.
     while np.max(cur_corners_im) > 0:
         # Defining the first bezier point.
         ctrl_p_0 = np.asarray(np.unravel_index(np.argmax(cur_corners_im), corner_im.shape))
