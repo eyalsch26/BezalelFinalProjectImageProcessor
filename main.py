@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # d = np.array([[1, 0, 0], [0, 1, 0], [0, 1, 0]])
     r = np.arange(25).reshape((5, 5))
     h = np.argwhere(r[1:4, 1:4] == 6)
-    print(h)
+    print(h - 1 + np.array([6, 6]))
     # e = np.ones((2 * r - 1, 2 * r - 1))
     # for row in range(r - 1):
     #     for column in range(r - 1):
