@@ -310,21 +310,6 @@ def estimate_ctrl_p_1(edges_im, ctrl_p_0):
     return ctrl_p_1, vec_p_1
 
 
-def find_next_pixel(edges_im, pxl):
-    # Checking bounds.
-    row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
-    # Calculating the neighborhood of the current pixel considering the boundaries of the image.
-    neighborhood = edges_im[row_s:row_e, column_s:column_e]
-    # Finding the indices of the neighbor pixel which has value of 2. TODO: Make sure there is only one neighbor with 2.
-    next_pxl = np.argwhere(neighborhood == 2)
-    if len(next_pxl) == 0:  # TODO: What if there is no neighbor?
-        next_pxl = np.argwhere(neighborhood == 1)
-    if len(next_pxl) == 0:
-        return next_pxl
-    next_pxl += pxl - 1
-    return next_pxl
-
-
 def estimate_ctrl_p_2(edges_im, next_pxl, p3_p2_vec):
     ctrl_p_2 = next_pxl + p3_p2_vec
     in_bounds = check_point_in_bounds(ctrl_p_2 + p3_p2_vec, edges_im.shape)
@@ -338,14 +323,75 @@ def estimate_ctrl_p_2(edges_im, next_pxl, p3_p2_vec):
     return ctrl_p_2
 
 
-def find_bezier_ctrl_points(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, curve_im):
+def find_next_pixel(edges_im, pxl):
+    # Checking bounds.
+    row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
+    # Calculating the neighborhood of the current pixel considering the boundaries of the image.
+    neighborhood = edges_im[row_s:row_e, column_s:column_e]
+    # Finding the indices of the neighbors pixels which has value of 1.
+    neighbors = np.argwhere(neighborhood == 1)
+    if len(neighbors) == 0:  # TODO: What if there is no neighbor? Must be referred in the outer scope (calling func).
+        return np.array([-1, -1])
+    # Finds the nearest neighbor by calculating the minimum euclidean distance from the center of the neighborhood.
+    next_pxl_vec = neighbors[np.argmin(np.linalg.norm(neighbors - np.ones((len(neighbors), 2))))] - 1
+    next_pxl = pxl + next_pxl_vec
+    return next_pxl
+
+
+def trim_curve_im(cur_curve_im):
+    coord = np.argwhere(cur_curve_im == 1)
+    minima = np.min(coord, axis=0)
+    row_min, column_min = minima[0], minima[1]
+    maxima = np.max(coord, axis=0)
+    row_max, column_max = maxima[0], maxima[1]
+    trimmed = cur_curve_im[row_min:row_max + 1, column_min:column_max + 1]
+    new_origin = [row_min, column_min]
+    return trimmed, new_origin
+
+
+def pad_trimmed_curve_im(trimmed_curve_im, padder_coefficient=3):
+    x_s = trimmed_curve_im.shape[0]
+    y_s = trimmed_curve_im.shape[1]
+    x = padder_coefficient * x_s
+    y = padder_coefficient * y_s
+    padded = np.zeros((x, y))
+    padded[x_s: 2 * x_s, y_s: 2 * y_s] = trimmed_curve_im
+    return padded
+
+
+def convert_ctrl_pts(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, padded_origin):
+    c_p_0_t = ctrl_p_0 - padded_origin
+    c_p_1_t = ctrl_p_1 - padded_origin
+    c_p_2_t = ctrl_p_2 - padded_origin
+    c_p_3_t = ctrl_p_3 - padded_origin
+    return c_p_0_t, c_p_1_t, c_p_2_t, c_p_3_t
+
+
+def find_bezier_ctrl_points(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, curve_im, search_step=0.5):
     cur_ctrl_p_1, cur_ctrl_p_2 = ctrl_p_1, ctrl_p_2
     bezier_control_points = np.array([ctrl_p_0, cur_ctrl_p_1, cur_ctrl_p_2, ctrl_p_3])
     cur_result = Rasterizer.bezier_curve_rasterizer(bezier_control_points, canvas_shape=curve_im.shape)
     err = curve_im - cur_result
-    while np.min(err) < 0:
-        pass
-    return cur_ctrl_p_1, cur_ctrl_p_2
+    r_srch_rds = int(curve_im.shape[0] / 3) - 1
+    c_srch_rds = int(curve_im.shape[1] / 3) - 1
+    r_intervals = int(2 * (search_step ** (-1)) * r_srch_rds + 1)
+    c_intervals = int(2 * (search_step ** (-1)) * c_srch_rds + 1)
+    if np.min(err) < 0:  # TODO: Allow out of bounds - find a way for control points outside the frame.
+        for p_1_r_ad in np.linspace(-r_srch_rds, r_srch_rds, r_intervals):
+            for p_1_c_ad in np.linspace(-c_srch_rds, c_srch_rds, c_intervals):
+                for p_2_r_ad in np.linspace(-r_srch_rds, r_srch_rds, r_intervals):
+                    for p_2_c_ad in np.linspace(-c_srch_rds, c_srch_rds, c_intervals):
+                        cur_ctrl_p_1 = ctrl_p_1 + np.array([p_1_r_ad, p_1_c_ad])
+                        cur_ctrl_p_2 = ctrl_p_2 + np.array([p_2_r_ad, p_2_c_ad])
+                        bezier_control_points = np.array([ctrl_p_0, cur_ctrl_p_1, cur_ctrl_p_2, ctrl_p_3])
+                        cur_result = Rasterizer.bezier_curve_rasterizer(bezier_control_points,
+                                                                        canvas_shape=curve_im.shape)
+                        err = curve_im - cur_result
+                        if np.min(err) == 0:
+                            return ctrl_p_0, cur_ctrl_p_1, cur_ctrl_p_2, ctrl_p_3
+    if np.min(err) < 0:
+        return ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3
+    return ctrl_p_0, cur_ctrl_p_1, cur_ctrl_p_2, ctrl_p_3
 
 
 def trace_edge_to_bezier(edges_im, corner_im, ctrl_p_0):
@@ -362,20 +408,33 @@ def trace_edge_to_bezier(edges_im, corner_im, ctrl_p_0):
     cur_edges_im = edges_im
     cur_curve_im = np.zeros(edges_im.shape)
     curve_len = 0
+    # Estimating the location of the second bezier control point and a vector from the first to second control points.
     ctrl_p_1, p0_p1_vec = estimate_ctrl_p_1(edges_im - corner_im, ctrl_p_0)
     cur_pxl = ctrl_p_0
-    # visited = {ctrl_p_0, last_pxl}
+    # Building the current curve image until the first control point.
     while cur_pxl != ctrl_p_1:
         cur_curve_im[cur_pxl[0]][cur_pxl[1]] = 1
         cur_pxl += p0_p1_vec
         curve_len += 1
-    cur_pxl = ctrl_p_1 - p0_p1_vec
+    cur_pxl = ctrl_p_1 - p0_p1_vec  # TODO: Consider at least 6 pixels.
     cur_edges_im -= cur_curve_im
     next_pxl = find_next_pixel(cur_edges_im, cur_pxl)
+    while curve_len < 5:
+        cur_pxl = next_pxl
+        cur_curve_im[cur_pxl[0]][cur_pxl[1]] = 1
+        cur_edges_im -= cur_curve_im
+        next_pxl = find_next_pixel(cur_edges_im, cur_pxl)
+        curve_len += 1
     p3_p2_vec = cur_pxl - next_pxl
     cur_curve_im[next_pxl[0]][next_pxl[1]] = 1
     ctrl_p_2 = estimate_ctrl_p_2(edges_im, next_pxl, p3_p2_vec)
-    cur_bezier_ctrl_pts = find_bezier_ctrl_points(ctrl_p_0, ctrl_p_1, ctrl_p_2, next_pxl, cur_curve_im)
+    # Trimming the relevant window where the curve is included from the entire image.
+    cur_curve_im_trim, trimmed_origin = trim_curve_im(cur_curve_im)
+    # Padding the trimmed curve image to allow control points outside the frame of the original image.
+    cur_curve_im_trim_pad = pad_trimmed_curve_im(cur_curve_im_trim)
+    padded_origin = trimmed_origin - np.array([cur_curve_im_trim.shape[0], cur_curve_im_trim.shape[1]])
+    c_p_0_t, c_p_1_t, c_p_2_t, c_p_3_t = convert_ctrl_pts(ctrl_p_0, ctrl_p_1, ctrl_p_2, next_pxl, padded_origin)
+    cur_bezier_ctrl_pts = find_bezier_ctrl_points(c_p_0_t, c_p_1_t, c_p_2_t, c_p_3_t, cur_curve_im_trim_pad)
 
 
 def trace_edges_to_bezier(edges_im, corner_im):

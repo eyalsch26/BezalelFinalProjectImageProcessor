@@ -16,10 +16,18 @@ if __name__ == '__main__':
     # a = np.array([[[0.5, 0.001], [0, 0], [0, 0]], [[0, 0], [1.1, 1.9], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
     # b = np.array([[[0, 0], [0, 0], [0, 0]], [[0, 0], [-1, 1], [0, 0]], [[0, 0], [0, 0], [0, 0]]])
     # c = np.array([a, b])
-    # d = np.array([[1, 0, 0], [0, 1, 0], [0, 1, 0]])
-    r = np.arange(25).reshape((5, 5))
-    h = np.argwhere(r[1:4, 1:4] == 6)
-    print(h - 1 + np.array([6, 6]))
+    # d = np.array([[0, 0, 1, 1, 0],
+    #               [0, 1, 0, 0, 0],
+    #               [0, 1, 0, 0, 0],
+    #               [0, 1, 0, 1, 0],
+    #               [0, 0, 1, 0, 0]])
+    # r = np.argwhere(d == 1)
+    # h = np.min(r, axis=0)
+    # q = np.max(r, axis=0)
+    # print(r)
+    # print(h)
+    # print(q)
+    print(np.ceil(0.5))
     # e = np.ones((2 * r - 1, 2 * r - 1))
     # for row in range(r - 1):
     #     for column in range(r - 1):
