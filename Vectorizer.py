@@ -374,8 +374,8 @@ def find_bezier_ctrl_points(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, curve_im, se
     err = curve_im - cur_result
     r_srch_rds = int(curve_im.shape[0] / 3) - 1
     c_srch_rds = int(curve_im.shape[1] / 3) - 1
-    r_intervals = int(2 * (search_step ** (-1)) * r_srch_rds + 1)
-    c_intervals = int(2 * (search_step ** (-1)) * c_srch_rds + 1)
+    r_intervals = int((search_step ** (-1)) * r_srch_rds + 1)
+    c_intervals = int((search_step ** (-1)) * c_srch_rds + 1)
     if np.min(err) < 0:  # TODO: Allow out of bounds - find a way for control points outside the frame.
         for p_1_r_ad in np.linspace(-r_srch_rds, r_srch_rds, r_intervals):
             for p_1_c_ad in np.linspace(-c_srch_rds, c_srch_rds, c_intervals):
@@ -437,7 +437,7 @@ def trace_edge_to_bezier(edges_im, corner_im, ctrl_p_0):
     cur_bezier_ctrl_pts = find_bezier_ctrl_points(c_p_0_t, c_p_1_t, c_p_2_t, c_p_3_t, cur_curve_im_trim_pad)
 
 
-def trace_edges_to_bezier(edges_im, corner_im):
+def trace_edges_to_bezier0(edges_im, corner_im):
     bezier_control_points = np.zeros((1, 2, 4))
     cur_corners_im = corner_im
     cur_edges_im = 2 * edges_im - corner_im  # Edges=2. Corners=1. Empty=0.
@@ -460,15 +460,61 @@ def trace_edges_to_bezier(edges_im, corner_im):
     return bezier_control_points
 
 
+def find_neighbours(edges_im, pxl):
+    # Checking bounds.
+    row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
+    # Calculating the neighborhood of the current pixel considering the boundaries of the image.
+    neighborhood = edges_im[row_s:row_e, column_s:column_e]
+    # Finding the indices of the neighbors pixels which has value of 1.
+    neighbours = np.argwhere(neighborhood == 1)
+    return neighbours
+
+
+def find_connected_corners(edges_im, corners_im, corner):
+    connected_corners = set()
+    visited = set(tuple(corner))
+    to_visit = find_neighbours(edges_im, corner)
+    while len(to_visit) != 0:
+        nxt_pxl = to_visit[-1]
+        np.delete(to_visit, -1, 0)  # Popping the last element from the numpy array (stack).
+        visited.add(tuple(nxt_pxl))
+        # If the neighbour is a corner than it is added to the set and we continue to check the other neighbours.
+        if corners_im[nxt_pxl[0], nxt_pxl[1]] == 1:
+            connected_corners.add(nxt_pxl)
+            continue
+        neighbours = find_neighbours(edges_im, nxt_pxl)
+        for neighbour in neighbours:
+            if tuple(neighbour) not in visited:
+                np.append(to_visit, neighbour, axis=0)
+
+
+
 def pair_corners(edges_im, corners_im):
-    pass
+    corner_pairs = dict()
+    corners = np.argwhere(corners_im == 1)
+    for corner in corners:
+        connected_corners = find_connected_corners(edges_im, corners_im, corner)
+        # Checks for duplicates i.e. the current corner and its neighbor are already in the dictionary as value and key.
+        for connected_corner_idx in range(len(connected_corners)):
+            if corner_pairs[tuple(connected_corners[connected_corner_idx])] == tuple(corner):
+                connected_corners = np.delete(connected_corners, connected_corner_idx, 0)
+        corner_pairs[tuple(corner)] = connected_corners
+    return corner_pairs
+
+
+def trace_edges_to_bezier(edges_im, corner_im):
+    cur_edges_im = edges_im
+    cur_curve_im = np.zeros(edges_im.shape)
+    neighbors_stack = np.array([])
+    bezier_curve_arr = np.array([])
+    err = np.max(cur_edges_im - cur_curve_im)
 
 
 def vectorize_image(im):
     edges_im = detect_edges(im)
     corners_im = detect_corners(edges_im)
     corners_pairs = pair_corners(edges_im, corners_im)
-    return corners_im
+    # return corners_im
     # return 0.5 * (corners_im + edges_im)
     # p = np.random.randint(1, 11) / 10  # For showreel
     # return p * (corners_im + edges_im)  # For showreel
