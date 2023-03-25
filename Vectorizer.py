@@ -363,12 +363,12 @@ def trace_edge_from_corner(edges_im, corners_im, p_0):
     vec_dict = dict()
     visited = {tuple(p_0)}
     relative_neighbours = find_neighbours(edges_im, p_0)  # Relative neighbours.
-    neighbours_vecs = vectors_to_neighbours(relative_neighbours)
+    neighbours_vecs = relative_neighbours - 1  # Used vectors_to_neighbours(relative_neighbours).
     neighbours = p_0 + neighbours_vecs  # Global neighbours.
     to_visit = sort_neighbours_by_angle(cur_vec, neighbours, neighbours_vecs)
     for i in range(len(neighbours)):
         vec_dict[tuple(neighbours[i])] = neighbours_vecs[i]
-
+    # Running in DFS with vector preferences to build the paths.
     while len(to_visit) != 0:
         # Finding the next pixel in the path.
         cur_pxl = to_visit[-1]
@@ -385,7 +385,7 @@ def trace_edge_from_corner(edges_im, corners_im, p_0):
         cur_vec = vec_dict[tuple(cur_pxl)]
         # Applying neighbourhood operations on the current pixel.
         relative_neighbours = find_neighbours(edges_im, cur_pxl)  # Relative neighbours.
-        neighbours_vecs = vectors_to_neighbours(relative_neighbours)
+        neighbours_vecs = relative_neighbours - 1  # Used vectors_to_neighbours(relative_neighbours).
         neighbours = cur_pxl + neighbours_vecs  # Global neighbours.
         neighbours_sorted = sort_neighbours_by_angle(cur_vec, neighbours, neighbours_vecs)  # Global neighbours sorted.
         neighbours_sorted_filtered = np.array([neighbour for neighbour in neighbours_sorted if tuple(neighbour) not in
@@ -404,8 +404,58 @@ def trace_edge_from_corner(edges_im, corners_im, p_0):
                 paths[paths_num] = cur_path
                 paths_num += 1
             cur_path = np.array([])
-
     return paths
+
+
+def trace_edges(edges_im, corner_im):
+    corners = np.argwhere(corner_im == 1)
+    paths = dict()
+    paths_num = 0
+    for i in range(len(corners)):
+        corner = corners[i]
+        cur_paths = trace_edge_from_corner(edges_im, corner_im, corner)
+        cur_paths_num = len(cur_paths)
+        for j in range(cur_paths_num):
+            paths[paths_num + j] = cur_paths[j]
+        paths_num += cur_paths_num
+    return paths
+
+
+def calculate_bezier_control_points(path):
+    path_len = len(path)
+    path_len_2 = 2 * path_len
+    p_0 = path[0]
+    x_y_1 = path[path_len / 3] if path_len % 3 == 0 else (path[path_len // 3] + path[(path_len // 3) + 1]) * 0.5
+    x_y_2 = path[path_len_2 / 3] if path_len % 3 == 0 else (path[path_len_2 // 3] + path[(path_len_2 // 3) + 1]) * 0.5
+    p_3 = path[-1]
+    t_1 = 1 / 3
+    t_2 = 2 / 3
+    coofficient_1_t1 = 3 * t_1 - 6 * (t_1 ** 2) + 3 * (t_1 ** 3)  # Constant: 4/9.
+    coofficient_2_t1 = 3 * (t_1 ** 2) - 3 * (t_1 ** 3)
+    coofficient_1_t2 = 3 * t_2 - 6 * (t_2 ** 2) + 3 * (t_2 ** 3)
+    coofficient_2_t2 = 3 * (t_2 ** 2) - 3 * (t_2 ** 3)
+    x_mat = np.array([[coofficient_1_t1, coofficient_2_t1], [coofficient_1_t2, coofficient_2_t2]])
+    x_res_mat = np.array([x_y_1[0], x_y_2[0]])
+    y_mat = np.array([[coofficient_1_t1, coofficient_2_t1], [coofficient_1_t2, coofficient_2_t2]])
+    y_res_mat = np.array([x_y_1[1], x_y_2[1]])
+    x_result = np.linalg.solve(x_mat, x_res_mat)
+    y_result = np.linalg.solve(y_mat, y_res_mat)
+    p_1 = np.array([x_result[0], y_result[0]])
+    p_2 = np.array([x_result[1], y_result[1]])
+    return p_0, p_1, p_2, p_3
+
+
+def recover_bezier_control_points(path, threshold):  # TODO: Not checked and probably wrong. fix recursion return.
+    bzr_ctrl_pts = calculate_bezier_control_points(path)
+    curve = Rasterizer.bezier_curve_points(bzr_ctrl_pts)
+    err = len(np.argwhere(np.linalg.norm(path - curve) != 0))
+    bzr_ctrl_pts_dict = dict()
+    if err > threshold and len(path > 1):
+        bzr_ctrl_pts_dict[0] = recover_bezier_control_points(path[:len(path)//2], threshold)
+        bzr_ctrl_pts_dict[1] = recover_bezier_control_points(path[len(path)//2:], threshold)
+        return bzr_ctrl_pts_dict
+    bzr_ctrl_pts_dict[0] = path
+    return bzr_ctrl_pts_dict
 
 
 def trace_edges_to_bezier(edges_im, corner_im):

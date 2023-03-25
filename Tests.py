@@ -178,24 +178,33 @@ def my_edge_detection_check(t1_co, t2_co):
     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 44, f'AangDetectEdgesImpThinT{t1_co}T{t2_co}', True)
 
 
-def trace_edge_from_corner_check():
+# Works.
+def trace_edge_from_corner_basic_check():
     edges_im = np.array([[0, 0, 0, 0, 0, 0, 0],
-                         [0, 0, 1, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 1, 0, 0],
                          [0, 0, 0, 1, 0, 0, 0],
-                         [0, 0, 0, 1, 0, 0, 0],
-                         [0, 0, 0, 1, 1, 1, 0],
-                         [0, 0, 1, 1, 0, 0, 0],
-                         [0, 1, 0, 0, 0, 0, 0]])
+                         [0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0]])
     corner_im = np.array([[0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 1, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 1, 0, 0],
+                          [0, 0, 0, 1, 0, 0, 0],
                           [0, 0, 0, 0, 0, 0, 0],
                           [0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 1, 0],
                           [0, 0, 0, 0, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0]])
-    p_0 = np.array([1, 2])
+                          [0, 0, 0, 0, 0, 0, 0]])
+    p_0 = np.array([2, 3])
     paths = Vectorizer.trace_edge_from_corner(edges_im, corner_im, p_0)
     print(paths)
+
+
+def trace_edge_from_corner_check():
+    # edges_im =
+    # corner_im =
+    # paths = Vectorizer.trace_edge_from_corner(edges_im, corner_im, p_0)
+    # print(paths)
+    pass
 
 
 def vectorize_check():
