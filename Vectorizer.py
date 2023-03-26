@@ -498,7 +498,7 @@ def recover_bezier_control_points(path, threshold=0.25):  # TODO: Not checked an
         for j in range(bzr_curve_num_1):
             bzr_ctrl_pts_dict[bzr_curve_num_0 + j] = bzr_ctrl_pts_dict_1[j]
         return bzr_ctrl_pts_dict
-    bzr_ctrl_pts_dict[0] = path
+    bzr_ctrl_pts_dict[0] = bzr_ctrl_pts
     return bzr_ctrl_pts_dict
 
 
