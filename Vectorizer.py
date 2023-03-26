@@ -421,13 +421,23 @@ def trace_edges_to_paths(edges_im, corner_im):
     return paths
 
 
-def calculate_bezier_control_points(path):
+def partition_indices(path):
     path_len = len(path)
     path_len_2 = 2 * path_len
+    partition_1 = path_len // 3
+    partition_2 = path_len_2 // 3
+    if path_len % 3 != 0 and path_len > 2:
+        x_y_1 = (path[partition_1] + path[partition_1 + 1]) * 0.5
+        x_y_2 = (path[partition_2] + path[partition_2 + 1]) * 0.5
+    else:
+        x_y_1 = (path[partition_1])
+        x_y_2 = (path[partition_2])
+    return x_y_1, x_y_2
+
+def calculate_bezier_control_points(path):
     # Setting the four points on the curve.
     p_0 = path[0]
-    x_y_1 = path[path_len / 3] if path_len % 3 == 0 else (path[path_len // 3] + path[(path_len // 3) + 1]) * 0.5
-    x_y_2 = path[path_len_2 / 3] if path_len % 3 == 0 else (path[path_len_2 // 3] + path[(path_len_2 // 3) + 1]) * 0.5
+    x_y_1, x_y_2 = partition_indices(path)
     p_3 = path[-1]
     # Calculating constants.
     t_1 = 1 / 3
@@ -459,10 +469,24 @@ def calculate_bezier_control_points(path):
     return np.array([p_0, p_1, p_2, p_3])
 
 
-def recover_bezier_control_points(path, threshold=0.2):  # TODO: Not checked and probably wrong. fix recursion return.
+def calculate_path_curve_error(path, curve):
+    max_len = np.max((len(path), len(curve)))
+    max_dim = np.max((int(np.max(path)), int(np.max(curve)))) + 1
+    path_im = np.zeros((max_dim, max_dim))
+    curve_im = np.zeros((max_dim, max_dim))
+    path_indices = path.T[0] * 2 + path.T[1]
+    curve_indices = curve.T[0] * 2 + curve.T[1]
+    np.put(path_im, path_indices.astype(np.int32), 1.0)
+    np.put(curve_im, curve_indices.astype(np.int32), 1.0)
+    error_im = path_im - curve_im
+    error = len(np.argwhere(error_im != 0)) / max_len
+    return error
+
+
+def recover_bezier_control_points(path, threshold=0.25):  # TODO: Not checked and probably wrong. fix recursion return.
     bzr_ctrl_pts = calculate_bezier_control_points(path)
     curve = Rasterizer.bezier_curve_points(bzr_ctrl_pts)
-    err = len(np.argwhere(np.linalg.norm(path - curve) != 0))
+    err = calculate_path_curve_error(path, curve)
     bzr_ctrl_pts_dict = dict()
     if err > threshold and len(path > 1):
         bzr_ctrl_pts_dict_0 = recover_bezier_control_points(path[:1 + len(path)//2], threshold)
@@ -481,15 +505,25 @@ def recover_bezier_control_points(path, threshold=0.2):  # TODO: Not checked and
 def trace_edges_to_bezier(edges_im, corner_im):
     paths_dict = trace_edges_to_paths(edges_im, corner_im)
     bzr_ctrl_pts_dict = dict()
+    curves_connectivity_arr = np.array([])
     paths_num = len(paths_dict)
+    curves_num = 0
     for p in range(paths_num):
-        bzr_ctrl_pts = recover_bezier_control_points(paths_dict[p])
-
+        cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p])
+        cur_curves_num = len(cur_bzr_ctrl_pts_dict)
+        for c in range(cur_curves_num):
+            bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]
+        curves_num += cur_curves_num
+        curves_connectivity_arr = np.append(curves_connectivity_arr, cur_curves_num)
+    return bzr_ctrl_pts_dict, curves_connectivity_arr
 
 
 def vectorize_image(im):
     edges_im = detect_edges(im)
     corners_im = detect_corners(edges_im)
+    bzr_ctrl_pts_dict, connectivity_arr = trace_edges_to_bezier(edges_im, corners_im)
+    bzr_ctrl_pts_arr = np.array([bzr_ctrl_pts_dict[i] for i in range(len(bzr_ctrl_pts_dict))])
+    return bzr_ctrl_pts_arr
     # corners_pairs = pair_corners(edges_im, corners_im)
     # return corners_im
     # return 0.5 * (corners_im + edges_im)

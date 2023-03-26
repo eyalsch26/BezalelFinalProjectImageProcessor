@@ -13,6 +13,11 @@ import Tests
 
 
 if __name__ == '__main__':
+    # d = np.array([[[0.0, 1.0], [1, 2.2]], [[0, 0], [1, 0]]])
+    # c = np.zeros((np.max(d) + 1, np.max(d) + 1))
+    # d_flatten = d[0].T[0] * 2 + d[0].T[1]
+    # np.put(c, d_flatten, 1)
+    # print(d[0].astype(np.uint32))
     # d = np.array([[0, 0, 1, 1, 0],
     #               [0, 1, 0, 0, 0],
     #               [0, 1, 0, 0, 0],
@@ -34,8 +39,8 @@ if __name__ == '__main__':
     # e *= e[::-1]
     # e *= e[::, ::-1]
     # f = np.unravel_index(np.argmax(e[2:5, 2:5]), e.shape)
-    Tests.trace_edge_from_corner_basic_check()
-    # Tests.vectorize_check()
+    # Tests.trace_edge_from_corner_basic_check()
+    Tests.vectorize_check()
     # Tests.show_reel('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Render Test\HD720\Establish_00\Establish_00.',
     #                 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\SequenceTest\Establish_00\Establish_00_Res.',
     #                 0, 2276, 4)

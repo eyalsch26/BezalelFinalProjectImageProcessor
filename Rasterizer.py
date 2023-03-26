@@ -208,6 +208,15 @@ def bezier_curve_rasterizer(bezier_control_points, stroke_width=1, texture=None,
     return bsc_pxls
 
 
+def bezier_curves_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920)):
+    im = np.zeros(canvas_shape)
+    for i in range(len(bezier_control_points_arr)):
+        cur_bzr_ctrl_pts_arr = bezier_control_points_arr[i]
+        im += bezier_curve_rasterizer(cur_bzr_ctrl_pts_arr)
+    im /= np.max(im)
+    return im
+
+
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------
 
 # def bezier_curve_point(bezier_control_points, t):

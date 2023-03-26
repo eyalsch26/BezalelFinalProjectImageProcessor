@@ -215,10 +215,11 @@ def vectorize_check():
     im_i = np.zeros(im_y.shape)
     im_q = np.zeros(im_y.shape)
     # Computing the image's edges.
-    corners_im = Vectorizer.vectorize_image(im_y)
-    im_yiq_new = np.dstack((corners_im, im_i, im_q))
+    bzr_ctrl_pts_dict = Vectorizer.vectorize_image(im_y)
+    raster_im = Rasterizer.bezier_curve_rasterizer(bzr_ctrl_pts_dict)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 46, f'Shape0DetectCornersOnEdgesHD720', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 47, f'Shape0DetectBezierControlPointsAndRasterHD720', True)
 
 
 def show_reel(in_path, out_path, start, end, zero_pad):
