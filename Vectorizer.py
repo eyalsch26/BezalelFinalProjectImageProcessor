@@ -407,7 +407,7 @@ def trace_edge_from_corner(edges_im, corners_im, p_0):
     return paths
 
 
-def trace_edges(edges_im, corner_im):
+def trace_edges_to_paths(edges_im, corner_im):
     corners = np.argwhere(corner_im == 1)
     paths = dict()
     paths_num = 0
@@ -424,46 +424,67 @@ def trace_edges(edges_im, corner_im):
 def calculate_bezier_control_points(path):
     path_len = len(path)
     path_len_2 = 2 * path_len
+    # Setting the four points on the curve.
     p_0 = path[0]
     x_y_1 = path[path_len / 3] if path_len % 3 == 0 else (path[path_len // 3] + path[(path_len // 3) + 1]) * 0.5
     x_y_2 = path[path_len_2 / 3] if path_len % 3 == 0 else (path[path_len_2 // 3] + path[(path_len_2 // 3) + 1]) * 0.5
     p_3 = path[-1]
+    # Calculating constants.
     t_1 = 1 / 3
     t_2 = 2 / 3
-    coofficient_1_t1 = 3 * t_1 - 6 * (t_1 ** 2) + 3 * (t_1 ** 3)  # Constant: 4/9.
-    coofficient_2_t1 = 3 * (t_1 ** 2) - 3 * (t_1 ** 3)
-    coofficient_1_t2 = 3 * t_2 - 6 * (t_2 ** 2) + 3 * (t_2 ** 3)
-    coofficient_2_t2 = 3 * (t_2 ** 2) - 3 * (t_2 ** 3)
-    x_mat = np.array([[coofficient_1_t1, coofficient_2_t1], [coofficient_1_t2, coofficient_2_t2]])
-    x_res_mat = np.array([x_y_1[0], x_y_2[0]])
-    y_mat = np.array([[coofficient_1_t1, coofficient_2_t1], [coofficient_1_t2, coofficient_2_t2]])
-    y_res_mat = np.array([x_y_1[1], x_y_2[1]])
+    coefficient_0_t1 = 1 - 3 * t_1 + 3 * (t_1 ** 2) - t_1**3
+    coefficient_1_t1 = 3 * t_1 - 6 * (t_1 ** 2) + 3 * (t_1 ** 3)  # Constant: 4/9.
+    coefficient_2_t1 = 3 * (t_1 ** 2) - 3 * (t_1 ** 3)
+    coefficient_3_t1 = t_1 ** 3
+    coefficient_0_t2 = 1 - 3 * t_2 + 3 * (t_2 ** 2) - t_2**3
+    coefficient_1_t2 = 3 * t_2 - 6 * (t_2 ** 2) + 3 * (t_2 ** 3)
+    coefficient_2_t2 = 3 * (t_2 ** 2) - 3 * (t_2 ** 3)
+    coefficient_3_t2 = t_2 ** 3
+    # Calculating the linear equation system's coefficients.
+    # The left hand side of the linear equation system.
+    x_mat = np.array([[coefficient_1_t1, coefficient_2_t1], [coefficient_1_t2, coefficient_2_t2]])
+    y_mat = np.array([[coefficient_1_t1, coefficient_2_t1], [coefficient_1_t2, coefficient_2_t2]])
+    # The right hand side of the linear equation system.
+    x_res_0 = x_y_1[0] - (p_0[0] * coefficient_0_t1) - (p_3[0] * coefficient_3_t1)
+    x_res_1 = x_y_2[0] - (p_0[0] * coefficient_0_t2) - (p_3[0] * coefficient_3_t2)
+    y_res_0 = x_y_1[1] - (p_0[1] * coefficient_0_t1) - (p_3[1] * coefficient_3_t1)
+    y_res_1 = x_y_2[1] - (p_0[1] * coefficient_0_t2) - (p_3[1] * coefficient_3_t2)
+    x_res_mat = np.array([x_res_0, x_res_1])
+    y_res_mat = np.array([y_res_0, y_res_1])
+    # Solving the linear equation system to get the two missing control points.
     x_result = np.linalg.solve(x_mat, x_res_mat)
     y_result = np.linalg.solve(y_mat, y_res_mat)
     p_1 = np.array([x_result[0], y_result[0]])
     p_2 = np.array([x_result[1], y_result[1]])
-    return p_0, p_1, p_2, p_3
+    return np.array([p_0, p_1, p_2, p_3])
 
 
-def recover_bezier_control_points(path, threshold):  # TODO: Not checked and probably wrong. fix recursion return.
+def recover_bezier_control_points(path, threshold=0.2):  # TODO: Not checked and probably wrong. fix recursion return.
     bzr_ctrl_pts = calculate_bezier_control_points(path)
     curve = Rasterizer.bezier_curve_points(bzr_ctrl_pts)
     err = len(np.argwhere(np.linalg.norm(path - curve) != 0))
     bzr_ctrl_pts_dict = dict()
     if err > threshold and len(path > 1):
-        bzr_ctrl_pts_dict[0] = recover_bezier_control_points(path[:len(path)//2], threshold)
-        bzr_ctrl_pts_dict[1] = recover_bezier_control_points(path[len(path)//2:], threshold)
+        bzr_ctrl_pts_dict_0 = recover_bezier_control_points(path[:1 + len(path)//2], threshold)
+        bzr_ctrl_pts_dict_1 = recover_bezier_control_points(path[len(path)//2:], threshold)
+        bzr_curve_num_0 = len(bzr_ctrl_pts_dict_0)
+        bzr_curve_num_1 = len(bzr_ctrl_pts_dict_1)
+        for i in range(bzr_curve_num_0):
+            bzr_ctrl_pts_dict[i] = bzr_ctrl_pts_dict_0[i]
+        for j in range(bzr_curve_num_1):
+            bzr_ctrl_pts_dict[bzr_curve_num_0 + j] = bzr_ctrl_pts_dict_1[j]
         return bzr_ctrl_pts_dict
     bzr_ctrl_pts_dict[0] = path
     return bzr_ctrl_pts_dict
 
 
 def trace_edges_to_bezier(edges_im, corner_im):
-    cur_edges_im = edges_im
-    cur_curve_im = np.zeros(edges_im.shape)
-    neighbors_stack = np.array([])
-    bezier_curve_arr = np.array([])
-    err = np.max(cur_edges_im - cur_curve_im)
+    paths_dict = trace_edges_to_paths(edges_im, corner_im)
+    bzr_ctrl_pts_dict = dict()
+    paths_num = len(paths_dict)
+    for p in range(paths_num):
+        bzr_ctrl_pts = recover_bezier_control_points(paths_dict[p])
+
 
 
 def vectorize_image(im):
