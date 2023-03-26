@@ -216,7 +216,7 @@ def vectorize_check():
     im_q = np.zeros(im_y.shape)
     # Computing the image's edges.
     bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
-    raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr)
+    raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 47, f'Shape0DetectBezierControlPointsAndRasterHD720', True)
