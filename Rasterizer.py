@@ -213,8 +213,8 @@ def bezier_curves_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920
     for i in range(len(bezier_control_points_arr)):
         cur_bzr_ctrl_pts_arr = bezier_control_points_arr[i]
         im += bezier_curve_rasterizer(cur_bzr_ctrl_pts_arr, canvas_shape=canvas_shape)
-    im /= np.max(im)
-    return im
+    # im /= np.max(im)  # For visualization only - indicates how many times a pixel has been coloured. Make sure no clip.
+    return np.clip(im, 0, 1)
 
 
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------
