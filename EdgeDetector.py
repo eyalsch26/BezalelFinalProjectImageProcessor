@@ -332,6 +332,93 @@ def detect_edges(image_frame, gaussian_kernel_size):
 #     return ctrl_p_2
 #
 #
+# def find_next_pixel(edges_im, pxl):
+#     # Checking bounds.
+#     row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
+#     # Calculating the neighborhood of the current pixel considering the boundaries of the image.
+#     neighborhood = edges_im[row_s:row_e, column_s:column_e]
+#     # Finding the indices of the neighbors pixels which has value of 1.
+#     neighbors = np.argwhere(neighborhood == 1)
+#     if len(neighbors) == 0:  # TODO: What if there is no neighbor? Must be referred in the outer scope (calling func).
+#         return np.array([-1, -1])
+#     # Finds the nearest neighbor by calculating the minimum euclidean distance from the center of the neighborhood.
+#     next_pxl_vec = neighbors[np.argmin(np.linalg.norm(neighbors - np.ones((len(neighbors), 2))))] - 1
+#     next_pxl = pxl + next_pxl_vec
+#     return next_pxl
+#
+#
+# def trim_curve_im(cur_curve_im):
+#     """
+#     Trims the given image of the curve to provide efficiency in calculation since dealing with smaller images is more efficient.
+#     :param cur_curve_im: A numpy array with shape as the shape of the original image frame. The entries are of type
+#     np.float64.
+#     :return: A tuple with shape (, 2) where the first element is the trimmed image so the frame is tight around the
+#     bounds of the curve. The second element is the origin of the trimmed image in respect to the original image (its left
+#     most and upper corner).
+#     """
+#     coord = np.argwhere(cur_curve_im == 1)
+#     minima = np.min(coord, axis=0)
+#     row_min, column_min = minima[0], minima[1]
+#     maxima = np.max(coord, axis=0)
+#     row_max, column_max = maxima[0], maxima[1]
+#     trimmed = cur_curve_im[row_min:row_max + 1, column_min:column_max + 1]
+#     new_origin = [row_min, column_min]
+#     return trimmed, new_origin
+#
+#
+# def pad_trimmed_curve_im(trimmed_curve_im, padder_coefficient=3):
+#     x_s = trimmed_curve_im.shape[0]
+#     y_s = trimmed_curve_im.shape[1]
+#     x = padder_coefficient * x_s
+#     y = padder_coefficient * y_s
+#     padded = np.zeros((x, y))
+#     padded[x_s: 2 * x_s, y_s: 2 * y_s] = trimmed_curve_im
+#     return padded
+#
+#
+# def detect_corners_0(edges_im):
+#     grd_krn = corner_gradient_kernels()
+#     crn_grd = np.array([scipy.signal.convolve2d(edges_im, grd_krn[i], mode='same') for i in range(4)]) * edges_im
+#     # Creating the basic gradients. Four images to be multiply with the filtered corners.
+#     s_e = np.ones((edges_im.shape[0], edges_im.shape[1], 2))
+#     n_e = s_e * np.array([1, -1])
+#     e = s_e * np.array([1, 0])
+#     s = s_e * np.array([0, 1])
+#     bsc_grd = np.array([e, s, s_e, n_e])  # Stacking in one array.
+#     # Multiplying the basic gradients with the filtered ones to get the orientation of the gradient in each pixel.
+#     grd_spr = np.array([bsc_grd[i] * np.expand_dims(crn_grd[i], axis=2) for i in range(GRAD_DIRECTIONS_NUM)])
+#     sum_grd = np.sum(grd_spr, axis=0)
+#     mgt_grd = np.linalg.norm(sum_grd, axis=2)
+#     corners = np.zeros(mgt_grd.shape)
+#     corners[(mgt_grd > 1) & (mgt_grd <= 3)] = 1
+#     i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
+#     t_x_crn_flt = scipy.signal.convolve2d(edges_im, t_x_corners_kernel(), mode='same')
+#     t_x_corners = np.zeros(edges_im.shape)
+#     t_x_corners[(t_x_crn_flt == 7) | (t_x_crn_flt == 9) | (t_x_crn_flt == 41)] = 1
+#     y_crn = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
+#     y_corners = np.zeros(edges_im.shape)
+#     y_corners[(y_crn == 549) | (y_crn == 660) | (y_crn == 594) | (y_crn == 585) |
+#               (y_crn == 586) | (y_crn == 553) | (y_crn == 676) | (y_crn == 658)] = 1
+#     bolt_crn = np.zeros(edges_im.shape)
+#     bolt_crn[(y_crn == 556) | (y_crn == 688) | (y_crn == 673) | (y_crn == 618) |
+#              (y_crn == 706) | (y_crn == 523) | (y_crn == 538) | (y_crn == 646)] = 1
+#     # c_corners = np.zeros(edges_im.shape)
+#     # c_corners[(y_crn == 517) | (y_crn == 532) | (y_crn == 592) | (y_crn == 577)] = 1
+#     corners += i_corners + t_x_corners + y_corners - bolt_crn
+#     return corners
+#     # l_corners = np.ones(edges_im.shape)[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)]
+#     # r_corners = np.ones(edges_im.shape)[(tmp == 526) | (tmp == 568) | (tmp == 736) | (tmp == 643)] - c_corners - l_corners
+#     # x_corners = np.ones(edges_im.shape)[(tmp == 682) | (tmp == 597)]
+#
+#
+# def convert_ctrl_pts(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, padded_origin):
+#     c_p_0_t = ctrl_p_0 - padded_origin
+#     c_p_1_t = ctrl_p_1 - padded_origin
+#     c_p_2_t = ctrl_p_2 - padded_origin
+#     c_p_3_t = ctrl_p_3 - padded_origin
+#     return c_p_0_t, c_p_1_t, c_p_2_t, c_p_3_t
+#
+#
 # def find_bezier_ctrl_points(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, curve_im, search_step=0.5):
 #     cur_ctrl_p_1, cur_ctrl_p_2 = ctrl_p_1, ctrl_p_2
 #     bezier_control_points = np.array([ctrl_p_0, cur_ctrl_p_1, cur_ctrl_p_2, ctrl_p_3])

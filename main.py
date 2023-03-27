@@ -39,8 +39,8 @@ if __name__ == '__main__':
     # e *= e[::-1]
     # e *= e[::, ::-1]
     # f = np.unravel_index(np.argmax(e[2:5, 2:5]), e.shape)
-    # Tests.trace_edge_from_corner_basic_check()
-    Tests.vectorize_check()
+    Tests.trace_edge_from_corner_basic_check()
+    # Tests.vectorize_check()
     # Tests.show_reel('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Render Test\HD720\Establish_00\Establish_00.',
     #                 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\SequenceTest\Establish_00\Establish_00_Res.',
     #                 0, 2276, 4)

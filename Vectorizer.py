@@ -18,8 +18,10 @@ def gaussian_kernel(kernel_size):
     """
     Constructs a square symmetric 2D Gaussian kernel according to the given kernel size. The kernel is normalized.
     :param kernel_size: An integer representing the size of the kernel.
-    :return: A 2D numpy array of the gaussian kernel. For example, for kernel_size=3 the function returns
-    the normalized kernel: [[1,2,1],[2,4,2],[1,2,1]]/16. The entries are of type float64.
+    :return: A 2D numpy array of the gaussian kernel where the entries are of type float64.
+    For example, for kernel_size=3 the function returns the normalized kernel: [[1,2,1],
+                                                                                [2,4,2],
+                                                                                [1,2,1]] / 16.
     """
     conv_kernel = np.array([1, 1], dtype=np.float64)[:, None]
     conv_kernel = scipy.signal.convolve2d(conv_kernel, conv_kernel.T)
@@ -97,6 +99,14 @@ def t_x_corners_kernel():
 
 
 def kernel_padder(kernel, im_shape):
+    """
+    Expands the given kernel to the shape of the original image in order to preform a blur using dft.
+    :param kernel: A numpy array with shape (x, x) where x is an odd number (all possible shapes of a square kernel).
+    It's elements are integers.
+    :param im_shape: A tuple with shape (, 2) with dtype of integers. For example (1080, 1920).
+    :return: A numpy array with shape im_shape where the elements are of type np.float64. The given gernel is located
+    in the center of the returned image.
+    """
     expanded_kernel = np.zeros(im_shape, np.float64)
     top_left = int(np.round((im_shape[0] - kernel.shape[0]) * 0.5))
     top_right = top_left + kernel.shape[0]
@@ -107,17 +117,36 @@ def kernel_padder(kernel, im_shape):
 
 
 def dft2D(image_frame):
+    """
+    Preforms discrete fourier transform on the given image.
+    :param image_frame: A numpy array with dtype np.float64. The entries are in the range of [0, 1].
+    :return: A numpy array with dtype np.float64. This is the image in the fourier domain.
+    """
     image_dft = np.fft.fft2(np.float64(image_frame))
     image_dft_shifted = np.fft.fftshift(image_dft)
     return image_dft_shifted
 
 
 def idft2D(fourier_image):
+    """
+    Preforms inverse discrete fourier transform on the given image.
+    :param fourier_image: A numpy array with dtype np.float64. This is the original image in the fourier domain.
+    :return: A numpy array with dtype np.float64. This is the image in the time domain.
+    """
     fourier_image_shifted_back = np.fft.ifftshift(fourier_image)
     return np.real(np.fft.ifft2(fourier_image_shifted_back))
 
 
 def blur_image(im, gaussian_kernel_size):
+    """
+    Blurs the given image by creating a blur kernel according to the given kernel size, padding the kernel to the
+    shape of the given image, transforming both to the fourier domain, applying matrix multiplication element wise
+    :param im: A numpy array with dtype np.float64. The entries are in the range of [0, 1].
+    :param gaussian_kernel_size: An odd integer representing the size of the gaussian kernel. For understanding
+    using example see the documentation of the gaussian_kernel() function.
+    :return: A numpy array with shape im.shape where the entries are of dtype np.float64. The returned image is the
+    blurred original image.
+    """
     # Creating the image of the kernel.
     mask = gaussian_kernel(gaussian_kernel_size)
     mask_expanded = kernel_padder(mask, im.shape)
@@ -132,6 +161,14 @@ def blur_image(im, gaussian_kernel_size):
 
 
 def laplacian_image(im):
+    """
+    Calculates the Laplacian of the given image. A reminder: The Laplacian is the divergence of the gradient,
+    means it is the sum of the second derivatives of the original image:
+    Laplacian = second_derivative_x(im) + second_derivative_y(im).
+    :param im: A numpy array with dtype np.float64. The entries are in the range of [0, 1]. This is the original
+    image to compute the Laplacian upon.
+    :return: A numpy array with shape im.shape and with dtype np.float64. This is the Laplacian image.
+    """
     # Creating the image of the kernel.
     mask = laplacian_kernel()
     mask_expanded = kernel_padder(mask, im.shape)
@@ -146,6 +183,14 @@ def laplacian_image(im):
 
 
 def remove_isolated_pixels(im):
+    """
+    removes pixels which have no neighbours from first order in the given image.
+    :param im: A numpy array with dtype np.float64. The entries are in the range of [0, 1].
+    :return: A numpy array with shape im.shape and with dtype np.float64. In this image a box in the form of:
+    [[0, 0, 0],
+     [0, x, 0],
+     [0, 0, 0]] where x is a number of dtype np.float64 in the range of [0, 1] cannot be found.
+    """
     # Creating the image of the kernel.
     mask = np.array([[2, 2, 2], [2, 1, 2], [2, 2, 2]], dtype=np.float64)
     # Convolving to remove the isolated pixels.
@@ -154,6 +199,11 @@ def remove_isolated_pixels(im):
 
 
 def thin_edges(im):
+    """
+    Diminishes the edges to a width of one pixel. Only one iteration is applied so some leftovers might be remained.
+    :param im: A numpy array with dtype np.float64.
+    :return: A numpy array with shape im.shape and with dtype np.float64.
+    """
     # Removing double edges. E.g.: [0,0,0],[1,1,1],[1,1,1]
     tep = scipy.signal.convolve2d(im, two_powers_kernel(), mode='same')
     im[(tep == 574) | (tep == 760)] = 0
@@ -168,12 +218,27 @@ def thin_edges(im):
 
 
 def clean_undesired_pixels(im):
+    """
+    Removes the isolated pixels and thins the edges to one pixel width in the image.
+    :param im: A numpy array with dtype np.float64.
+    :return: A numpy array with shape im.shape and with dtype np.float64.
+    """
     clean_im = thin_edges(im)
     cleaner_im = remove_isolated_pixels(clean_im)
     return cleaner_im
 
 
 def detect_edges(im, t1_co=0.975, t2_co=0.995):
+    """
+    Finds the edges in the image based on the canny detection algorithm. The low filter is set to 0.975 and the high
+    filter is set to 0.995 as default.
+    :param im: A numpy array with dtype np.float64.
+    :param t1_co: A floating point number representing the low pass filter so that pixels with values lower than
+    t1_co will be removed from the final image and will not represent an edge.
+    :param t2_co: A floating point number representing the high pass filter so that pixels with values higher than
+    t2_co will be removed from the final image and will not represent an edge.
+    :return: A numpy array with shape im.shape and with dtype np.float64. In this image only the edges remaind.
+    """
     # Computing Laplacian/Sobel on the image.
     # s = sobel_gradient(im)  # Works yet not as good as just laplacian - thick lines.
     # lap_im = sobel_gradient(s[0])[0] + sobel_gradient(s[1])[1]
@@ -196,6 +261,11 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
 
 
 def corner_gradient_kernels():
+    """
+    Builds four matrices to find the gradient along the four axes: horizontal, vertical, descending diagonal (from
+    left to right) and ascending diagonal (from left to right).
+    :return: A numpy array with shape (4, 3, 3) with dtype integer.
+    """
     hrz = np.array([[0, 0, 0], [-1, 0, 1], [0, 0, 0]])
     vtc = hrz.T
     dsc = np.array([[-1, 0, 0], [0, 0, 0], [0, 0, 1]])
@@ -203,42 +273,40 @@ def corner_gradient_kernels():
     return np.array([hrz, vtc, dsc, acc])
 
 
-def detect_corners_0(edges_im):
-    grd_krn = corner_gradient_kernels()
-    crn_grd = np.array([scipy.signal.convolve2d(edges_im, grd_krn[i], mode='same') for i in range(4)]) * edges_im
-    # Creating the basic gradients. Four images to be multiply with the filtered corners.
-    s_e = np.ones((edges_im.shape[0], edges_im.shape[1], 2))
-    n_e = s_e * np.array([1, -1])
-    e = s_e * np.array([1, 0])
-    s = s_e * np.array([0, 1])
-    bsc_grd = np.array([e, s, s_e, n_e])  # Stacking in one array.
-    # Multiplying the basic gradients with the filtered ones to get the orientation of the gradient in each pixel.
-    grd_spr = np.array([bsc_grd[i] * np.expand_dims(crn_grd[i], axis=2) for i in range(GRAD_DIRECTIONS_NUM)])
-    sum_grd = np.sum(grd_spr, axis=0)
-    mgt_grd = np.linalg.norm(sum_grd, axis=2)
-    corners = np.zeros(mgt_grd.shape)
-    corners[(mgt_grd > 1) & (mgt_grd <= 3)] = 1
-    i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
-    t_x_crn_flt = scipy.signal.convolve2d(edges_im, t_x_corners_kernel(), mode='same')
-    t_x_corners = np.zeros(edges_im.shape)
-    t_x_corners[(t_x_crn_flt == 7) | (t_x_crn_flt == 9) | (t_x_crn_flt == 41)] = 1
-    y_crn = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
-    y_corners = np.zeros(edges_im.shape)
-    y_corners[(y_crn == 549) | (y_crn == 660) | (y_crn == 594) | (y_crn == 585) |
-              (y_crn == 586) | (y_crn == 553) | (y_crn == 676) | (y_crn == 658)] = 1
-    bolt_crn = np.zeros(edges_im.shape)
-    bolt_crn[(y_crn == 556) | (y_crn == 688) | (y_crn == 673) | (y_crn == 618) |
-             (y_crn == 706) | (y_crn == 523) | (y_crn == 538) | (y_crn == 646)] = 1
-    # c_corners = np.zeros(edges_im.shape)
-    # c_corners[(y_crn == 517) | (y_crn == 532) | (y_crn == 592) | (y_crn == 577)] = 1
-    corners += i_corners + t_x_corners + y_corners - bolt_crn
-    return corners
-    # l_corners = np.ones(edges_im.shape)[(tmp == 522) | (tmp == 552) | (tmp == 672) | (tmp == 642)]
-    # r_corners = np.ones(edges_im.shape)[(tmp == 526) | (tmp == 568) | (tmp == 736) | (tmp == 643)] - c_corners - l_corners
-    # x_corners = np.ones(edges_im.shape)[(tmp == 682) | (tmp == 597)]
-
-
 def detect_corners(edges_im):
+    """
+    Finds the coordinates in the given image where there are corners in the following forms (42 forms overall):
+    1. 'i_corners': 0 1 0   0 0 1   0 0 0   0 0 0   0 0 0   0 0 0   0 0 0   1 0 0
+                    0 1 0   0 1 0   0 1 1   0 1 0   0 1 0   0 1 0   1 1 0   0 1 0
+                    0 0 0   0 0 0   0 0 0   0 0 1   0 1 0   1 0 0   0 0 0   0 0 0
+
+    2. 'c_corners': 1 0 1   0 0 1   0 0 0   1 0 0
+                    0 1 0   0 1 0   0 1 0   0 1 0
+                    0 0 0   0 0 1   1 0 1   1 0 0
+
+    3. 'l_corners': 0 1 0   0 0 0   0 0 0   0 1 0
+                    0 1 1   0 1 1   1 1 0   1 1 0
+                    0 0 0   0 1 0   0 1 0   0 0 0
+
+    4. 'r_corners': 0 1 1   0 0 0   0 0 0   1 0 0   1 1 0   0 0 0   0 0 0   0 0 1
+                    0 1 0   0 1 1   0 1 0   1 1 0   0 1 0   1 1 0   0 1 0   0 1 1
+                    0 0 0   0 0 1   1 1 0   0 0 0   0 0 0   1 0 0   0 1 1   0 0 0
+
+    5. 't_corners': 0 1 0   0 0 0   0 1 0   0 1 0   1 0 1   1 0 0   0 0 1   1 0 1
+                    1 1 1   1 1 1   1 1 0   0 1 1   0 1 0   0 1 0   0 1 0   0 1 0
+                    0 0 0   0 1 0   0 1 0   0 1 0   0 0 1   1 0 1   1 0 1   1 0 0
+
+    6. 'x_corners': 0 1 0   1 0 1
+                    1 1 1   0 1 0
+                    0 1 0   1 0 1
+
+    7. 'y_corners': 0 1 0   1 0 0   0 0 1   0 1 0   1 0 1   1 0 0   0 1 0   0 0 1
+                    0 1 1   0 1 1   1 1 0   1 1 0   0 1 0   0 1 1   0 1 0   1 1 0
+                    1 0 0   0 1 0   0 1 0   0 0 1   0 1 0   1 0 0   1 0 1   0 0 1
+    :param edges_im: A numpy array with dtype np.float64.
+    :return: A numpy array with shape edges_im.shape and with dtype np.float64 in the range [0, 1]. In this image each
+    entry with value of 1 represents a corner in the image.
+    """
     corners = np.zeros(edges_im.shape)
     i_corners = scipy.signal.convolve2d(edges_im, one_center_kernel(), mode='same') == 3
     tmp = scipy.signal.convolve2d(edges_im, two_powers_kernel(), mode='same')
@@ -274,55 +342,23 @@ def check_point_in_bounds(point, shape, row_init=0, column_init=0):
 
 
 def neighborhood_bounds(pxl, shape, r_d=1, c_d=1):
+    """
+    Given a coordinate of a pixel and the shape of the frame, checks if a box of 3x3 around the given pixel
+    coordinates fits in the shape of the frame to ensure indices in bounds (to avoid "index out of bounds exception").
+    :param pxl: A numpy array with shape (, 2) which represents the pixel to check the neighbourhood bounds around.
+    :param shape: A tuple with shape (, 2). For example (1080, 1920).
+    :param r_d: An integer represents the row radius from the given pixel (how many rows to check before and how many
+    rows to check after the given x coordinate of the given pixel). For example, if pixel=[4,3] and r_d=2,
+    the function checks if indices 4-2=2 and 4+2=6 are in bounds respective to the shape given.
+    :param c_d: An integer represents the column radius from the given pixel as described above in r_d.
+    :return: A tuple with shape (, 4) with entries of type integers representing the indices of the neighbourhood of
+    the given pixel.
+    """
     row_s = pxl[0] - r_d if pxl[0] > 0 else 0
     row_e = pxl[0] + r_d + 1 if pxl[0] < shape[0] - r_d else shape[0]
     column_s = pxl[1] - c_d if pxl[1] > 0 else 0
     column_e = pxl[1] + c_d + 1 if pxl[1] < shape[1] - c_d else shape[1]
     return row_s, row_e, column_s, column_e
-
-
-def find_next_pixel(edges_im, pxl):
-    # Checking bounds.
-    row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
-    # Calculating the neighborhood of the current pixel considering the boundaries of the image.
-    neighborhood = edges_im[row_s:row_e, column_s:column_e]
-    # Finding the indices of the neighbors pixels which has value of 1.
-    neighbors = np.argwhere(neighborhood == 1)
-    if len(neighbors) == 0:  # TODO: What if there is no neighbor? Must be referred in the outer scope (calling func).
-        return np.array([-1, -1])
-    # Finds the nearest neighbor by calculating the minimum euclidean distance from the center of the neighborhood.
-    next_pxl_vec = neighbors[np.argmin(np.linalg.norm(neighbors - np.ones((len(neighbors), 2))))] - 1
-    next_pxl = pxl + next_pxl_vec
-    return next_pxl
-
-
-def trim_curve_im(cur_curve_im):
-    coord = np.argwhere(cur_curve_im == 1)
-    minima = np.min(coord, axis=0)
-    row_min, column_min = minima[0], minima[1]
-    maxima = np.max(coord, axis=0)
-    row_max, column_max = maxima[0], maxima[1]
-    trimmed = cur_curve_im[row_min:row_max + 1, column_min:column_max + 1]
-    new_origin = [row_min, column_min]
-    return trimmed, new_origin
-
-
-def pad_trimmed_curve_im(trimmed_curve_im, padder_coefficient=3):
-    x_s = trimmed_curve_im.shape[0]
-    y_s = trimmed_curve_im.shape[1]
-    x = padder_coefficient * x_s
-    y = padder_coefficient * y_s
-    padded = np.zeros((x, y))
-    padded[x_s: 2 * x_s, y_s: 2 * y_s] = trimmed_curve_im
-    return padded
-
-
-def convert_ctrl_pts(ctrl_p_0, ctrl_p_1, ctrl_p_2, ctrl_p_3, padded_origin):
-    c_p_0_t = ctrl_p_0 - padded_origin
-    c_p_1_t = ctrl_p_1 - padded_origin
-    c_p_2_t = ctrl_p_2 - padded_origin
-    c_p_3_t = ctrl_p_3 - padded_origin
-    return c_p_0_t, c_p_1_t, c_p_2_t, c_p_3_t
 
 
 def find_neighbours(edges_im, pxl):
@@ -434,6 +470,7 @@ def partition_indices(path):
         x_y_2 = (path[partition_2])
     return x_y_1, x_y_2
 
+
 def calculate_bezier_control_points(path):
     # Setting the four points on the curve.
     p_0 = path[0]
@@ -483,7 +520,7 @@ def calculate_path_curve_error(path, curve):
     return error
 
 
-def recover_bezier_control_points(path, threshold=0.25):  # TODO: Not checked and probably wrong. fix recursion return.
+def recover_bezier_control_points(path, threshold=0.25):
     bzr_ctrl_pts = calculate_bezier_control_points(path)
     curve = Rasterizer.bezier_curve_points(bzr_ctrl_pts)
     err = calculate_path_curve_error(path, curve)
