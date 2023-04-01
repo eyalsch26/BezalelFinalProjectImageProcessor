@@ -265,7 +265,6 @@ def canny_detector_check(k, g):
     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 33, f'AangCannyGauss{g}k{k}HD540', True)
 
 
-
 def corner_detection_check():
     # Preparing the image and the filter.
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'
@@ -293,6 +292,44 @@ def corner_detection_sobel_check():
     im_yiq_new = np.dstack((corner_image, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 30, 'AangCornersSobel', True)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Mac ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# Works.
+def vectorize_check_mac():
+    # Preparing the image and the filter.
+    im = FileManager.import_image(FileManager.FRAME_IN_MAC)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 00, f'VectorizeHD720', True)
+
+
+def show_reel_mac(in_path, out_path, start, end, zero_pad):
+    n = end - start
+    for im_file_idx in range(1, n+1):
+        n_padded = f'0{im_file_idx}'
+        while (len(n_padded) < zero_pad):
+            n_padded = f'0{n_padded}'
+        # Preparing the image and the filter.
+        im = FileManager.import_image(f'{in_path}{n_padded}.png')
+        im_yiq = Colourizer.rgb_to_yiq(im)
+        im_y = im_yiq[:, :, 0]
+        im_i = np.zeros(im_y.shape)
+        im_q = np.zeros(im_y.shape)
+        # Computing the image's edges.
+        corners_im = Vectorizer.vectorize_image(im_y)
+        im_yiq_new = np.dstack((corners_im, im_i, im_q))
+        im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+        image_frame = Colourizer.rgb_to_gray(im_rgb)
+        plt.imsave(out_path + n_padded + '.png', image_frame, cmap='gray')
 
 
 # Rasterizer -----------------------------------------------------------------------------------------------------------

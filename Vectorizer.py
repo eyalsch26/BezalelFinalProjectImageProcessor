@@ -364,6 +364,20 @@ def neighborhood_bounds(pxl, shape, r_d=1, c_d=1):
 
 
 def find_neighbours(edges_im, pxl):
+    """
+    Detects the pixels with value of 1 in a radius of one pixel from the given pixel. These pixels are called
+    neighbours and the group of these pixels is called a neighbourhood. For example, in the following case:
+    0 1 0 0 0 0 0
+    0 0 1 0 0 1 1
+    0 0 0 1 0 0 1
+    0 0 0 1 0 0 0
+    the neighbourhood of the pixel in the coordinate [2,3] to be returned will be: [[0,0], [2,1]]. Notice that the
+    coordinates are relative to the 3x3 box around the given pixel.
+    :param edges_im: A numpy array with dtype np.float64. The image of the current edges.
+    :param pxl: A numpy array with shape (,2) and dtype np.float64. The coordinate of the pixel to detect the
+    neighbours around.
+    :return: A numpy array with dtype np.float64 and shape (1, x, 2) where 0<x<8 is the number of neighbours.
+    """
     # Checking bounds.
     row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
     # Calculating the neighborhood of the current pixel considering the boundaries of the image.
