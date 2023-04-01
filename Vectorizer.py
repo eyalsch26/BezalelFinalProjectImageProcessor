@@ -389,10 +389,6 @@ def find_neighbours(edges_im, pxl):
     return neighbours
 
 
-def vectors_to_neighbours(neighbours):
-    return neighbours - 1
-
-
 def sort_neighbours_by_angle(origin_vec, neighbours, neighbours_vecs):
     neighbours_vecs_normalized = neighbours_vecs / np.linalg.norm(neighbours_vecs)
     # origin_vecs_normalized = np.repeat(origin_vec / np.linalg.norm(origin_vec), len(neighbours)).reshape(
@@ -580,7 +576,15 @@ def vectorize_image(im):
     # p = np.random.randint(1, 11) / 10  # For showreel
     # return p * (corners_im + edges_im)  # For showreel
 
+
 # ----------------------------------------------- Vector Manipulation --------------------------------------------------
+
+def perpendicular_vec(vec, norm='same'):
+    p_vec = np.array([-vec[1], vec[0]])
+    if norm == 'one':
+        p_vec /= np.linalg.norm(p_vec)
+    return p_vec
+
 
 def displace_bezier_control_points(bezier_control_points):
     # Setting local variables.
@@ -593,7 +597,7 @@ def displace_bezier_control_points(bezier_control_points):
     b = p_2 - p_1
     c = p_2 - p_3
     d = p_3 - p_0
-    e = np.array([-d[1], d[0]])  # The perpendicular vector to d. (Dot product == 0).
+    e = perpendicular_vec(d)  # The perpendicular vector to d. (Dot product == 0).
     # Generating random coefficients to multiply the vectors by.
     rndm_pos_coefs = np.random.randint(1, 6, 2) * 0.4  # Range [1, 2] in steps of 0.4.
     rndm_neg_pos_coefs = np.random.randint(-5, 6, 4) * 0.4  # Range [-2, 2] in steps of 0.4.

@@ -541,4 +541,66 @@ def detect_edges(image_frame, gaussian_kernel_size):
 #                 connected_corners = np.delete(connected_corners, connected_corner_idx, 0)
 #         corner_pairs[tuple(corner)] = connected_corners
 #     return corner_pairs
+#
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#
+# def zero_crossing_check():
+#     # Preparing the image and the filter.
+#     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD540.png')
+#     im_yiq = Colourizer.rgb_to_yiq(im)
+#     im_y = im_yiq[:, :, 0]
+#     im_i = np.zeros(im_y.shape)
+#     im_q = np.zeros(im_y.shape)
+#     # Computing the corners image.
+#     zero_crossing_coordinates = Vectorizer.zero_crossing(im_y)
+#     im_y_new = np.zeros(im_y.shape)
+#     im_y_new[zero_crossing_coordinates[0], zero_crossing_coordinates[1]] = 1
+#     im_yiq_new = np.dstack((im_y_new, im_i, im_q))
+#     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+#     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 34, 'AangZeroCrossingHD540', True)
+#
+#
+# def canny_detector_check(k, g):
+#     # Preparing the image and the filter.
+#     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD540.png')
+#     im_yiq = Colourizer.rgb_to_yiq(im)
+#     im_y = im_yiq[:, :, 0]
+#     im_i = np.zeros(im_y.shape)
+#     im_q = np.zeros(im_y.shape)
+#     # Computing the image's edges.
+#     canny_edges_im = Vectorizer.canny_edge_detector(im_y, k=k, gaussian_kernel_size=g)
+#     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
+#     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+#     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 33, f'AangCannyGauss{g}k{k}HD540', True)
+#
+#
+# def corner_detection_check():
+#     # Preparing the image and the filter.
+#     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output'
+#                                   '\\frame_24_AangGrayEdgesLaplacian.png')
+#     im_yiq = Colourizer.rgb_to_yiq(im)
+#     im_y = im_yiq[:, :, 0]
+#     im_i = np.zeros(1080 * 1920).reshape((1080, 1920))
+#     im_q = np.zeros(1080 * 1920).reshape((1080, 1920))
+#     # Computing the corners image.
+#     corner_image = Vectorizer.harris_corner_detector(im_y, 5, 0.04, 0.1)
+#     im_yiq_new = np.dstack((corner_image, im_i, im_q))
+#     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+#     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 27, 'AangCornersFromLaplacian', True)
+#
+#
+# def corner_detection_sobel_check():
+#     # Preparing the image and the filter.
+#     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_0.0132.jpg')
+#     im_yiq = Colourizer.rgb_to_yiq(im)
+#     im_y = im_yiq[:, :, 0]
+#     im_i = np.zeros((1080, 1920))
+#     im_q = np.zeros((1080, 1920))
+#     # Computing the corners image.
+#     corner_image = Vectorizer.harris_corner_detector_sobel(im_y, 3, 0.04, 0.1)
+#     im_yiq_new = np.dstack((corner_image, im_i, im_q))
+#     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+#     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 30, 'AangCornersSobel', True)
 
