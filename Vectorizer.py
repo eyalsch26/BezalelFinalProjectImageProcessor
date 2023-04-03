@@ -618,8 +618,8 @@ def displace_bezier_control_points(bezier_control_points):
 
 
 def displace_bezier_curves(bezier_control_points_arr):
-    new_bzr_ctrl_pts_arr = np.array([])
+    new_bzr_ctrl_pts_arr = np.empty((0, 4, 2), dtype=np.float64)
     for bzr_ctrl_pts in bezier_control_points_arr:
         new_bzr_ctrl_pts = displace_bezier_control_points(bzr_ctrl_pts)
-        np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)
+        new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
     return new_bzr_ctrl_pts_arr

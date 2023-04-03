@@ -12,7 +12,7 @@ VEC_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Vector'
 RAST_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster\Stroke\SequenceFace'
 FRAME_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\\frame_0TryG2.png'
 # Mac
-FRAME_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Life/images/Shape.01.png'
+FRAME_IN_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Input/Shape.01.png'
 FRAMES_DIR_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Life/images/Shape.01.png'
 VEC_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector'
 RAST_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Raster'

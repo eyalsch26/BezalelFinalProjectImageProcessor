@@ -254,9 +254,45 @@ def vectorize_check_mac():
     FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 00, f'VectorizeHD720', True)
 
 
+# Works.
+def displacement_check_mac(in_path, out_path, frames_num):
+    # Preparing the image and the filter.
+    im = FileManager.import_image(in_path)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges' bezier control points.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr)
+    raster_im = Rasterizer.bezier_curves_rasterizer(new_bzr_ctrl_pts, canvas_shape=im_y.shape)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(out_path, im_rgb, 00, f'DisplacementHD720', True)
+
+
+def displacement_sequence_check_mac(in_path, out_path, frames_num):
+    # Preparing the image and the filter.
+    im = FileManager.import_image(in_path)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges' bezier control points.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    for i in range(frames_num):
+        new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr)
+        raster_im = Rasterizer.bezier_curves_rasterizer(new_bzr_ctrl_pts, canvas_shape=im_y.shape)
+        im_yiq_new = np.dstack((raster_im, im_i, im_q))
+        im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+        FileManager.save_image(out_path, im_rgb, 00, f'Displacement{i}HD720', True)
+
+
+
 def show_reel_mac(in_path, out_path, start, end, zero_pad):
     n = end - start
     for im_file_idx in range(1, n+1):
+        # Preparing the output file name.
         n_padded = f'0{im_file_idx}'
         while (len(n_padded) < zero_pad):
             n_padded = f'0{n_padded}'
