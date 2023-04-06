@@ -390,6 +390,22 @@ def find_neighbours(edges_im, pxl):
 
 
 def sort_neighbours_by_angle(origin_vec, neighbours, neighbours_vecs):
+    """
+    Creates a sorted array of the given pixel's neighbours based on the size of the angle between the vector to the
+    given pixel and the vector from the given pixel to the neighbour. For example, if the given pixel is in
+    coordinates [1,1], it's vector is [1,1] and it's neighbours are [[0,0],[2,2],[2,1],[1,2]] than the sorted array
+    will be: [[2,1],[2,2],[1,2],[0,0]]. Here's an illustration:
+    1 0 0 0 0
+    0 1 1 0 0
+    0 1 1 0 0
+    :param origin_vec: A numpy array with shape (,2) and dtype np.float64 representing the vector created from
+    previous pixel to the given/current pixel. In the illustration above, the previous pixel was at coordinates [0,0].
+    :param neighbours: A numpy array with dtype np.float64 and shape (,x) where 0<=x<=8. Represents the neighbours of
+    the current pixel.
+    :param neighbours_vecs: A numpy array with dtype np.float64 and shape (,x,2) where 0<=x<=8. Represents the vectors
+    from the current pixel to its neighbours.
+    :return:
+    """
     neighbours_vecs_normalized = neighbours_vecs / np.linalg.norm(neighbours_vecs)
     # origin_vecs_normalized = np.repeat(origin_vec / np.linalg.norm(origin_vec), len(neighbours)).reshape(
     origin_vec_normalized = origin_vec / np.linalg.norm(origin_vec)
@@ -560,8 +576,17 @@ def trace_edges_to_bezier(edges_im, corner_im):
     for p in range(paths_num):
         cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p])
         cur_curves_num = len(cur_bzr_ctrl_pts_dict)
+        final_curves_num = 0
         for c in range(cur_curves_num):
-            bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]
+            cur_bzr_ctrl_pts = cur_bzr_ctrl_pts_dict[c]
+            y_flip = np.copy(cur_bzr_ctrl_pts[::-1])
+            y = y_flip not in bzr_ctrl_pts_dict.values()
+            x = cur_bzr_ctrl_pts not in bzr_ctrl_pts_dict.values()
+            is_new = x and y
+            if is_new:
+                bzr_ctrl_pts_dict[curves_num + final_curves_num] = cur_bzr_ctrl_pts
+                final_curves_num += 1
+            # bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]  # Original.
         curves_num += cur_curves_num
         curves_connectivity_arr = np.append(curves_connectivity_arr, cur_curves_num)
     return bzr_ctrl_pts_dict, curves_connectivity_arr
@@ -586,7 +611,7 @@ def perpendicular_vec(vec, norm='same'):
     return p_vec
 
 
-def displace_bezier_control_points(bezier_control_points):
+def displace_bezier_control_points_0(bezier_control_points):
     # Setting local variables.
     p_0 = bezier_control_points[0]
     p_1 = bezier_control_points[1]
@@ -614,6 +639,28 @@ def displace_bezier_control_points(bezier_control_points):
     p_1_new = p_1 + p_1_vec
     p_2_new = p_2 + p_2_vec
     p_3_new = p_3 + p_3_vec
+    return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
+
+
+def displace_bezier_control_points(bezier_control_points):
+    # Setting local variables.
+    p_0 = bezier_control_points[0]
+    p_1 = bezier_control_points[1]
+    p_2 = bezier_control_points[2]
+    p_3 = bezier_control_points[3]
+    # Calculating the three vectors created by the four points (as described in the documentation and the notebook).
+    a = p_1 - p_0
+    b = p_2 - p_1
+    c = p_2 - p_3
+    d = p_3 - p_0
+    e = perpendicular_vec(d)  # The perpendicular vector to d. (Dot product == 0).
+    # Generating random coefficients to multiply the vectors by.
+    rndm_vec = np.random.randint(-2, 2)
+    # Calculating the new control points.
+    p_0_new = p_0 + rndm_vec * e
+    p_1_new = p_1 + rndm_vec * e
+    p_2_new = p_2 + rndm_vec * e
+    p_3_new = p_3 + rndm_vec * e
     return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
 
 

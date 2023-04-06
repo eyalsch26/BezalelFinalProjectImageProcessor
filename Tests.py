@@ -271,6 +271,7 @@ def displacement_check_mac(in_path, out_path, frames_num):
     FileManager.save_image(out_path, im_rgb, 00, f'DisplacementHD720', True)
 
 
+# Works.
 def displacement_sequence_check_mac(in_path, out_path, frames_num):
     # Preparing the image and the filter.
     im = FileManager.import_image(in_path)
