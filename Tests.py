@@ -56,6 +56,15 @@ def sanity_check_rgb_to_yiq_and_back():
 
 
 # Vectorizer -----------------------------------------------------------------------------------------------------------
+def pixels_count():
+    # Preparing the image and the filter.
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Vector'
+                                  '\\frame_53_Dog02VectorizeRecoverThreshold015HD720.png')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    print(len(np.argwhere(im_y > 0)))
+
+
 # Works.
 def sanity_check_rgb_to_yiq_to_fourier_and_back():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog.jpg')
@@ -166,7 +175,7 @@ def laplacian_edge_detection_check(t_co):
 # Works. Edges are not necessarily one pixel wide (but improved).
 def my_edge_detection_check(t1_co, t2_co):
     # Preparing the image and the filter.
-    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Aang_Pose_132_HD720.png')
+    im = FileManager.import_image(FileManager.FRAME_IN)
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(im_y.shape)
@@ -175,7 +184,22 @@ def my_edge_detection_check(t1_co, t2_co):
     canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 44, f'AangDetectEdgesImpThinT{t1_co}T{t2_co}', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 51, f'Dog_01DetectEdgesT{t1_co}T{t2_co}', True)
+
+
+def my_corner_detection_check(t1_co, t2_co):
+    # Preparing the image and the filter.
+    im = FileManager.import_image(FileManager.FRAME_IN)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges.
+    canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
+    corners_im = Vectorizer.detect_corners(canny_edges_im)
+    im_yiq_new = np.dstack((corners_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 51, f'Dog_01DetectCornersT{t1_co}T{t2_co}', True)
 
 
 # Works.
@@ -202,7 +226,7 @@ def trace_edge_from_corner_basic_check():
 # Works.
 def vectorize_check():
     # Preparing the image and the filter.
-    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Shape_0.png')
+    im = FileManager.import_image(FileManager.FRAME_IN)
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(im_y.shape)
@@ -212,7 +236,24 @@ def vectorize_check():
     raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 50, f'Shape0DetectBezierControlPointsAndRasterHD720', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 54, f'Dog02VectorizeHD720', True)
+
+
+# Works.
+def displacement_check(in_path, out_path):
+    # Preparing the image and the filter.
+    im = FileManager.import_image(in_path)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges' bezier control points.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr)
+    raster_im = Rasterizer.bezier_curves_rasterizer(new_bzr_ctrl_pts, canvas_shape=im_y.shape)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(out_path, im_rgb, 4, f'DisplacementHD720', True)
 
 
 def show_reel(in_path, out_path, start, end, zero_pad):
@@ -420,5 +461,32 @@ def sequence_face_stroke_rasterizer_check():
     return
 
 
-# def find_contour(image):
-#
+def vector_strokes_check():
+    # Preparing the image and the filter.
+    im = FileManager.import_image(FileManager.FRAME_IN)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    raster_im = Rasterizer.strokes_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 55, f'Dog02VectorStrokesHD720', True)
+
+
+def vector_strokes_displacement_check(in_path, out_path):
+    # Preparing the image and the filter.
+    im = FileManager.import_image(in_path)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges' bezier control points.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=im_y.shape)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    FileManager.save_image(out_path, im_rgb, 2, f'StrokesDisplacementHD720', True)

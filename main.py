@@ -47,8 +47,10 @@ if __name__ == '__main__':
     # e *= e[::, ::-1]
     # f = np.unravel_index(np.argmax(e[2:5, 2:5]), e.shape)
     # Tests.trace_edge_from_corner_basic_check()
-    Tests.vectorize_check()
+    # Tests.pixels_count()
+    Tests.vector_strokes_displacement_check(FileManager.FRAME_IN, FileManager.RAST_DIR_OUT)
     # Tests.vectorize_check_mac()
+    # Tests.displacement_check(FileManager.FRAME_IN, FileManager.VEC_DIR_OUT)
     # Tests.displacement_sequence_check_mac(FileManager.FRAME_IN_MAC,
     #                                       '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector/Sequence', 24)
     # Tests.show_reel('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Render Test\HD720\Establish_00\Establish_00.',
@@ -56,3 +58,4 @@ if __name__ == '__main__':
     #                 0, 2276, 4)
     # Tests.sequence_face_stroke_rasterizer_check()
     # Tests.my_edge_detection_check(0.975, 0.995)
+    # Tests.my_corner_detection_check(0.975, 0.995)

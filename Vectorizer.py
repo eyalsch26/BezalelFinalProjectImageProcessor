@@ -556,7 +556,7 @@ def calculate_path_curve_error(path, curve):
     return error
 
 
-def recover_bezier_control_points(path, threshold=0.25):
+def recover_bezier_control_points(path, threshold=0.15):  # Original threshold=0.25. With 0.15 Artifacts gone.
     path_l = len(path)
     bzr_ctrl_pts_dict = dict()
     bzr_ctrl_pts = calculate_bezier_control_points(path)
@@ -609,8 +609,9 @@ def vectorize_image(im):
 
 def perpendicular_vec(vec, norm='same'):
     p_vec = np.array([-vec[1], vec[0]])
-    if norm == 'one':
-        p_vec /= np.linalg.norm(p_vec)
+    nrm = np.linalg.norm(p_vec)
+    if norm == 'one' and nrm != 0:
+        p_vec /= nrm
     return p_vec
 
 
@@ -645,7 +646,7 @@ def displace_bezier_control_points_0(bezier_control_points):
     return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
 
 
-def displace_bezier_control_points(bezier_control_points):
+def displace_bezier_control_points_1(bezier_control_points):
     # Setting local variables.
     p_0 = bezier_control_points[0]
     p_1 = bezier_control_points[1]
@@ -664,6 +665,38 @@ def displace_bezier_control_points(bezier_control_points):
     p_1_new = p_1 + rndm_vec * e
     p_2_new = p_2 + rndm_vec * e
     p_3_new = p_3 + rndm_vec * e
+    return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
+
+
+def displace_bezier_control_points(bezier_control_points, factor=8, translate=16):
+    # Setting local variables.
+    p_0 = bezier_control_points[0]
+    p_1 = bezier_control_points[1]
+    p_2 = bezier_control_points[2]
+    p_3 = bezier_control_points[3]
+    # Calculating the three vectors created by the four points (as described in the documentation and the notebook).
+    a = p_1 - p_0
+    b = p_2 - p_1
+    c = p_2 - p_3
+    d = p_3 - p_0
+    e = perpendicular_vec(d, norm='one')  # The perpendicular vector to d. (Dot product == 0).
+    # Normalizing. Checking for norm=0 since control points can overlap.
+    a_norm = np.linalg.norm(a)
+    b_norm = np.linalg.norm(b)
+    c_norm = np.linalg.norm(c)
+    d_norm = np.linalg.norm(d)
+    a = a / a_norm if a_norm != 0 else a
+    b = b / b_norm if b_norm != 0 else b
+    c = c / c_norm if c_norm != 0 else c
+    d = d / d_norm if d_norm != 0 else d
+    # Generating random coefficients to multiply the vectors by.
+    rndm_factor = np.random.randint(0, factor)
+    rndm_trns = np.random.randint(-translate, translate)
+    # Calculating the new control points.
+    p_0_new = p_0 - rndm_factor * d + rndm_trns * e
+    p_1_new = p_1 - 0.5 * rndm_factor * a + rndm_trns * e
+    p_2_new = p_2 - 0.5 * rndm_factor * c + rndm_trns * e
+    p_3_new = p_3 + rndm_factor * d + rndm_trns * e
     return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
 
 
