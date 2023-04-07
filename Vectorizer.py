@@ -419,7 +419,14 @@ def sort_neighbours_by_angle(origin_vec, neighbours, neighbours_vecs):
     return neighbours_sorted
 
 
-def trace_edge_from_corner(edges_im, corners_im, p_0):
+def is_new_path(cur_path, traced_paths_dict):
+    arr = map(np.ndarray.tolist, traced_paths_dict.values())
+    x = cur_path.tolist() not in arr
+    y = cur_path[::-1].tolist() not in arr
+    return x and y
+
+
+def trace_edge_from_corner(edges_im, corners_im, p_0, traced_paths_dict):
     cur_path = np.array([p_0])
     cur_vec = np.array([1, 1])
     paths_num = 0
@@ -464,7 +471,8 @@ def trace_edge_from_corner(edges_im, corners_im, p_0):
                 vec_dict[neighbour] = neighbours_vecs[i]
         # If the neighbour is a corner or its neighbours were all visited than it is the end of a path.
         if corners_im[cur_pxl[0], cur_pxl[1]] == 1 or all_neighbours_visited:
-            if len(cur_path) > 1:
+            new_path = is_new_path(cur_path, traced_paths_dict)  # Checks if the path already has been traced.
+            if len(cur_path) > 1 and new_path:
                 paths[paths_num] = cur_path
                 paths_num += 1
             cur_path = np.array([])
@@ -477,7 +485,7 @@ def trace_edges_to_paths(edges_im, corner_im):
     paths_num = 0
     for i in range(len(corners)):
         corner = corners[i]
-        cur_paths = trace_edge_from_corner(edges_im, corner_im, corner)
+        cur_paths = trace_edge_from_corner(edges_im, corner_im, corner, paths)
         cur_paths_num = len(cur_paths)
         for j in range(cur_paths_num):
             paths[paths_num + j] = cur_paths[j]
@@ -549,11 +557,15 @@ def calculate_path_curve_error(path, curve):
 
 
 def recover_bezier_control_points(path, threshold=0.25):
+    path_l = len(path)
+    bzr_ctrl_pts_dict = dict()
     bzr_ctrl_pts = calculate_bezier_control_points(path)
+    if path_l <= 5:
+        bzr_ctrl_pts_dict[0] = bzr_ctrl_pts
+        return bzr_ctrl_pts_dict
     curve = Rasterizer.bezier_curve_points(bzr_ctrl_pts)
     err = calculate_path_curve_error(path, curve)
-    bzr_ctrl_pts_dict = dict()
-    if err > threshold and len(path > 1):
+    if err > threshold:
         bzr_ctrl_pts_dict_0 = recover_bezier_control_points(path[:1 + len(path)//2], threshold)
         bzr_ctrl_pts_dict_1 = recover_bezier_control_points(path[len(path)//2:], threshold)
         bzr_curve_num_0 = len(bzr_ctrl_pts_dict_0)
@@ -576,17 +588,8 @@ def trace_edges_to_bezier(edges_im, corner_im):
     for p in range(paths_num):
         cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p])
         cur_curves_num = len(cur_bzr_ctrl_pts_dict)
-        final_curves_num = 0
         for c in range(cur_curves_num):
-            cur_bzr_ctrl_pts = cur_bzr_ctrl_pts_dict[c]
-            y_flip = np.copy(cur_bzr_ctrl_pts[::-1])
-            y = y_flip not in bzr_ctrl_pts_dict.values()
-            x = cur_bzr_ctrl_pts not in bzr_ctrl_pts_dict.values()
-            is_new = x and y
-            if is_new:
-                bzr_ctrl_pts_dict[curves_num + final_curves_num] = cur_bzr_ctrl_pts
-                final_curves_num += 1
-            # bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]  # Original.
+            bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]
         curves_num += cur_curves_num
         curves_connectivity_arr = np.append(curves_connectivity_arr, cur_curves_num)
     return bzr_ctrl_pts_dict, curves_connectivity_arr

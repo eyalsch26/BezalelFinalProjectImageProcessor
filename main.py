@@ -15,6 +15,9 @@ import Tests
 if __name__ == '__main__':
     # a = np.empty((0, 4, 2), np.float64)
     # b = np.array([[1, 1], [2, 1], [3, 1], [4, 1]])
+    # c = np.array([[6, 6], [3, 5], [2, 5]])
+    # d = {1: np.array([[1, 1], [2, 1], [3, 1], [4, 1]]), 2: np.array([[2, 5], [3, 5], [6, 6]])}
+    # z = map(np.ndarray.tolist, d.values())
     # c = np.append(a, [b], axis=0)
     # print(c)
     # d = np.array([[[0.0, 1.0], [1, 2.2]], [[0, 0], [1, 0]]])
@@ -44,10 +47,10 @@ if __name__ == '__main__':
     # e *= e[::, ::-1]
     # f = np.unravel_index(np.argmax(e[2:5, 2:5]), e.shape)
     # Tests.trace_edge_from_corner_basic_check()
-    # Tests.vectorize_check()
+    Tests.vectorize_check()
     # Tests.vectorize_check_mac()
-    Tests.displacement_sequence_check_mac(FileManager.FRAME_IN_MAC,
-                                          '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector/Sequence', 24)
+    # Tests.displacement_sequence_check_mac(FileManager.FRAME_IN_MAC,
+    #                                       '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector/Sequence', 24)
     # Tests.show_reel('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Render Test\HD720\Establish_00\Establish_00.',
     #                 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\SequenceTest\Establish_00\Establish_00_Res.',
     #                 0, 2276, 4)

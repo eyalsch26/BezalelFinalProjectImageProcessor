@@ -212,7 +212,7 @@ def vectorize_check():
     raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 47, f'Shape0DetectBezierControlPointsAndRasterHD720', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 50, f'Shape0DetectBezierControlPointsAndRasterHD720', True)
 
 
 def show_reel(in_path, out_path, start, end, zero_pad):
