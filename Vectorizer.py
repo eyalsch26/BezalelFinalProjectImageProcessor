@@ -579,7 +579,7 @@ def recover_bezier_control_points(path, threshold=0.15):  # Original threshold=0
     return bzr_ctrl_pts_dict
 
 
-def trace_edges_to_bezier(edges_im, corner_im):
+def trace_edges_to_bezier(edges_im, corner_im):  # TODO: Convert For loops to map() - better performance in all files.
     paths_dict = trace_edges_to_paths(edges_im, corner_im)
     bzr_ctrl_pts_dict = dict()
     curves_connectivity_arr = np.array([])
@@ -615,71 +615,11 @@ def perpendicular_vec(vec, norm='same'):
     return p_vec
 
 
-def displace_bezier_control_points_0(bezier_control_points):
-    # Setting local variables.
-    p_0 = bezier_control_points[0]
-    p_1 = bezier_control_points[1]
-    p_2 = bezier_control_points[2]
-    p_3 = bezier_control_points[3]
-    # Calculating the three vectors created by the four points (as described in the documentation and the notebook).
+def a_b_c_d_vecs(p_0, p_1, p_2, p_3):
     a = p_1 - p_0
     b = p_2 - p_1
     c = p_2 - p_3
     d = p_3 - p_0
-    e = perpendicular_vec(d)  # The perpendicular vector to d. (Dot product == 0).
-    # Generating random coefficients to multiply the vectors by.
-    rndm_pos_coefs = np.random.randint(1, 6, 2) * 0.4  # Range [1, 2] in steps of 0.4.
-    rndm_neg_pos_coefs = np.random.randint(-5, 6, 4) * 0.4  # Range [-2, 2] in steps of 0.4.
-    p_0_coef_d, p_3_coef_d = rndm_pos_coefs[0], rndm_pos_coefs[1]
-    p_1_coef, p_2_coef = rndm_neg_pos_coefs[0], rndm_neg_pos_coefs[1]
-    p_0_coef_e, p_3_coef_e = rndm_neg_pos_coefs[2], rndm_neg_pos_coefs[3]
-    # Calculating the vectors.
-    p_0_vec = - p_0_coef_d * d + p_0_coef_e * e
-    p_1_vec = p_1_coef * (a - b)
-    p_2_vec = p_2_coef * (b + c)
-    p_3_vec = - p_3_coef_d * d + p_3_coef_e * e  # Was: - (p_3_coef * c - b)
-    # Calculating the new control points.
-    p_0_new = p_0 + p_0_vec
-    p_1_new = p_1 + p_1_vec
-    p_2_new = p_2 + p_2_vec
-    p_3_new = p_3 + p_3_vec
-    return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
-
-
-def displace_bezier_control_points_1(bezier_control_points):
-    # Setting local variables.
-    p_0 = bezier_control_points[0]
-    p_1 = bezier_control_points[1]
-    p_2 = bezier_control_points[2]
-    p_3 = bezier_control_points[3]
-    # Calculating the three vectors created by the four points (as described in the documentation and the notebook).
-    a = p_1 - p_0
-    b = p_2 - p_1
-    c = p_2 - p_3
-    d = p_3 - p_0
-    e = perpendicular_vec(d)  # The perpendicular vector to d. (Dot product == 0).
-    # Generating random coefficients to multiply the vectors by.
-    rndm_vec = np.random.randint(-2, 2)
-    # Calculating the new control points.
-    p_0_new = p_0 + rndm_vec * e
-    p_1_new = p_1 + rndm_vec * e
-    p_2_new = p_2 + rndm_vec * e
-    p_3_new = p_3 + rndm_vec * e
-    return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
-
-
-def displace_bezier_control_points(bezier_control_points, factor=8, translate=16):
-    # Setting local variables.
-    p_0 = bezier_control_points[0]
-    p_1 = bezier_control_points[1]
-    p_2 = bezier_control_points[2]
-    p_3 = bezier_control_points[3]
-    # Calculating the three vectors created by the four points (as described in the documentation and the notebook).
-    a = p_1 - p_0
-    b = p_2 - p_1
-    c = p_2 - p_3
-    d = p_3 - p_0
-    e = perpendicular_vec(d, norm='one')  # The perpendicular vector to d. (Dot product == 0).
     # Normalizing. Checking for norm=0 since control points can overlap.
     a_norm = np.linalg.norm(a)
     b_norm = np.linalg.norm(b)
@@ -689,6 +629,18 @@ def displace_bezier_control_points(bezier_control_points, factor=8, translate=16
     b = b / b_norm if b_norm != 0 else b
     c = c / c_norm if c_norm != 0 else c
     d = d / d_norm if d_norm != 0 else d
+    return a, b, c, d
+
+
+def displace_bezier_control_points(bezier_control_points, factor=8, translate=16):
+    # Setting local variables.
+    p_0 = bezier_control_points[0]
+    p_1 = bezier_control_points[1]
+    p_2 = bezier_control_points[2]
+    p_3 = bezier_control_points[3]
+    # Calculating the three vectors created by the four points (as described in the documentation and the notebook).
+    a, b, c, d = a_b_c_d_vecs(p_0, p_1, p_2, p_3)  # Normalized.
+    e = perpendicular_vec(d, norm='one')  # The perpendicular vector to d. (Dot product == 0).
     # Generating random coefficients to multiply the vectors by.
     rndm_factor = np.random.randint(0, factor)
     rndm_trns = np.random.randint(-translate, translate)

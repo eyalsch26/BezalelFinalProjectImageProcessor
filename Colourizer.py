@@ -30,3 +30,13 @@ def rgb_to_gray(image_frame):
     :return: The Y channel of the converted image.
     """
     return np.dot(image_frame[..., :3], [0.2989, 0.5870, 0.1140])
+
+
+def alpha_channel(im_y, alpha='n', c=1):
+    if alpha == 'b':  # B for binary.
+        return im_y != 0
+    elif alpha == 'y':  # Y for y channel (yiq format).
+        return im_y
+    elif alpha == 'c':  # C for constant coefficient.
+        return c * (im_y != 0)
+    return np.ones(im_y.shape)

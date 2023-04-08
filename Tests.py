@@ -14,7 +14,7 @@ BLUR_RATIO = 0.25
 
 # --------------------------------------------------- Hot Keys ---------------------------------------------------------
 # Ctrl + B : Go to declaration/usage of function.
-# Alt + Enter : Generate function from statement.
+# Ctrl + Alt + M : Generate function from statement. (Old: Alt + Enter).
 # Ctrl + Shift + Up/Down : Moves the line(s) up or down respectively.
 # Lambda expression: a = x if b < c else y.
 # ----------------------------------------------------------------------------------------------------------------------
@@ -53,6 +53,30 @@ def sanity_check_rgb_to_yiq_and_back():
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_rgb = (255 * Colourizer.yiq_to_rgb(im_yiq)).astype(np.uint8)
     FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 1, 'DogRgbToYiqAndBack', False)
+
+
+# Works.
+def write_bzr_ctrl_pts_to_file_check():
+    # Preparing the image and the filter.
+    im = FileManager.import_image(FileManager.FRAME_IN)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    # Computing the image's edges' bezier control points.
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    FileManager.save_bezier_control_points(FileManager.TEXT_DIR + '\\test1.txt', bzr_ctrl_pts_arr)
+
+
+# Works.
+def read_bzr_ctrl_pts_from_file_check():
+    output_shape = (1080, 1920)
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test0.txt')
+    raster_im = Rasterizer.strokes_rasterizer(bzr_ctrl_pts_arr, canvas_shape=output_shape, canvas_scalar=1.5)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFile0', im_rgb, im_alpha)
 
 
 # Vectorizer -----------------------------------------------------------------------------------------------------------
@@ -478,15 +502,28 @@ def vector_strokes_check():
 
 def vector_strokes_displacement_check(in_path, out_path):
     # Preparing the image and the filter.
+    output_shape = (1080, 1920)
     im = FileManager.import_image(in_path)
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
-    im_i = np.zeros(im_y.shape)
-    im_q = np.zeros(im_y.shape)
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
     # Computing the image's edges' bezier control points.
     bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
     new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr)
-    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=im_y.shape)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=1.5)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(out_path, im_rgb, 2, f'StrokesDisplacementHD720', True)
+    im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
+    FileManager.save_rgba_image(out_path, 'DogDisplacementEnlarged0', im_rgb, im_alpha)
+
+
+# Works.
+def save_rgba_check():
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster\Dog'
+                                  '\\frame_2_StrokesDisplacementHD720.png')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_alpha = Colourizer.alpha_channel(im_yiq[:, :, 0], alpha='y')  # Original: im_yiq[:, :, 0]
+    im_rgb = Colourizer.yiq_to_rgb(im_yiq)
+    # im_rgba = (255 * np.dstack((im_rgb, im_alpha))).astype(np.uint8)  # Original.
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogAlphaBinary', im_rgb, im_alpha)

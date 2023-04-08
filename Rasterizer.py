@@ -217,11 +217,12 @@ def bezier_curves_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920
     return np.clip(im, 0, 1)
 
 
-def strokes_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920)):
+def strokes_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920), canvas_scalar=1.5):
     im = np.zeros(canvas_shape)
+    bezier_control_points_arr_scaled = canvas_scalar * bezier_control_points_arr
     for i in range(len(bezier_control_points_arr)):
-        cur_bzr_ctrl_pts_arr = bezier_control_points_arr[i]
-        im += stroke_rasterizer(cur_bzr_ctrl_pts_arr, radius_max=2, texture='random', canvas_shape=canvas_shape)
+        cur_bzr_ctrl_pts = bezier_control_points_arr_scaled[i]
+        im += stroke_rasterizer(cur_bzr_ctrl_pts, radius_max=2, texture='random', canvas_shape=canvas_shape)
     im /= np.max(im)  # For visualization only - indicates how many times a pixel has been coloured. Make sure no clip.
     return np.clip(np.log2(im + 1), 0, 1)
 

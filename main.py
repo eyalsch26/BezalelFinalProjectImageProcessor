@@ -47,9 +47,11 @@ if __name__ == '__main__':
     # e *= e[::, ::-1]
     # f = np.unravel_index(np.argmax(e[2:5, 2:5]), e.shape)
     # Tests.trace_edge_from_corner_basic_check()
+    # Tests.save_rgba_check()
     # Tests.pixels_count()
-    Tests.vector_strokes_displacement_check(FileManager.FRAME_IN, FileManager.RAST_DIR_OUT)
+    # Tests.vector_strokes_displacement_check(FileManager.FRAME_IN, FileManager.RAST_DIR_OUT)
     # Tests.vectorize_check_mac()
+    Tests.read_bzr_ctrl_pts_from_file_check()
     # Tests.displacement_check(FileManager.FRAME_IN, FileManager.VEC_DIR_OUT)
     # Tests.displacement_sequence_check_mac(FileManager.FRAME_IN_MAC,
     #                                       '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector/Sequence', 24)
