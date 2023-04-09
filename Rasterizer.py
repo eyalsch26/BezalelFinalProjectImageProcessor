@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import scipy
 from scipy import signal
 from scipy import sparse
@@ -89,15 +90,11 @@ def bezier_curve_points(bezier_control_points):
 
 
 def draw_circle(r):
-    d = 2 * r - 1
-    stroke = np.ones((d, d))
-    for x in range(r):
-        for y in range(r):
-            dist = np.round(np.sqrt(x ** 2 + y ** 2))
-            if dist > r:
-                stroke[x][y] = 0
-    stroke *= stroke[::-1]
-    stroke *= stroke[::, ::-1]
+    r_r = math.floor(r)
+    x = np.linspace(-r_r, r_r, 2 * r_r + 1)
+    y = np.linspace(-r_r, r_r, 2 * r_r + 1)
+    xx, yy = np.meshgrid(x, y)
+    stroke = np.clip(r - np.sqrt(xx ** 2 + yy ** 2), 0, 1)
     return stroke
 
 
@@ -133,10 +130,10 @@ def add_texture(p, grad, r, stroke, texture='solid'):
 
 def pixel_stroke(p, grad, r, shape='circle', texture='solid', blur_kernel=3, opacity=1):
     # Creating basic stroke shape.
-    stroke_diameter = 4 * r + 1
+    stroke_diameter = np.uint16(2 * math.floor(r) + 1)
     stroke = np.zeros((stroke_diameter, stroke_diameter))
     if shape == 'circle':
-        stroke[r + 1:3 * r, r + 1:3 * r] = draw_circle(r)
+        stroke = draw_circle(r)
     if shape == 'square':
         d = 2 * r - 1
         stroke[r + 1:3 * r, r + 1:3 * r] = np.ones((d, d))
@@ -160,7 +157,7 @@ def stroke_radius(radius_min, radius_max, width_style, n, i):
         c = np.sqrt(2 * d / n)
     elif width_style == 'linear':
         c = 2 * d / n
-    return np.uint16(np.round(radius_min + c * (radius_max - radius_min)))
+    return radius_min + c * (radius_max - radius_min)
 
 
 def stroke_strength(strength_style, n, i):
@@ -179,6 +176,7 @@ def stroke_strength(strength_style, n, i):
 
 def stroke_rasterizer(bezier_control_points, radius_min=1, radius_max=5, radius_style='log', shape='circle',
                       texture='solid', blur_kernel=3, strength_style='log', canvas_shape=(1080, 1920)):
+    # Preparing the image base.
     big_canvas = np.zeros(tuple(2 * np.asarray(canvas_shape)))
     original_zero_x = np.uint16(0.5 * canvas_shape[0])
     original_zero_y = np.uint16(0.5 * canvas_shape[1])
@@ -186,6 +184,34 @@ def stroke_rasterizer(bezier_control_points, radius_min=1, radius_max=5, radius_
     original_end_y = 3 * original_zero_y
     bzr_pts = bezier_curve_points(bezier_control_points)
     n = len(bzr_pts)
+    # Computing each pixel stroke.
+    for i in range(n):
+        p = bzr_pts[i]
+        grad = (bzr_pts[i + 1] - p) if (i + 1) < n else (bzr_pts[i - 1] - p)
+        r = stroke_radius(radius_min, radius_max, radius_style, n, i)
+        s = stroke_strength(strength_style, n, i)
+        stroke = pixel_stroke(p, grad, r, shape, texture, blur_kernel, s)
+        # Placing the stroke on the canvas.
+        r_s = stroke.shape[0]//2
+        new_p_x = np.uint16(p[0]) + original_zero_x
+        new_p_y = np.uint16(p[1]) + original_zero_y
+        big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
+    canvas = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
+    canvas = np.clip(canvas, 0, 1)
+    return canvas
+
+
+def stroke_rasterizer1(bezier_control_points, radius_min=1, radius_max=5, radius_style='log', shape='circle',
+                      texture='solid', blur_kernel=3, strength_style='log', canvas_shape=(1080, 1920)):
+    # Preparing the image base.
+    big_canvas = np.zeros(tuple(2 * np.asarray(canvas_shape)))
+    original_zero_x = np.uint16(0.5 * canvas_shape[0])
+    original_zero_y = np.uint16(0.5 * canvas_shape[1])
+    original_end_x = 3 * original_zero_x
+    original_end_y = 3 * original_zero_y
+    bzr_pts = bezier_curve_points(bezier_control_points)
+    n = len(bzr_pts)
+    # Computing each pixel stroke.
     for i in range(n):
         p = bzr_pts[i]
         grad = (bzr_pts[i + 1] - p) if (i + 1) < n else (bzr_pts[i - 1] - p)
@@ -222,9 +248,9 @@ def strokes_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920), can
     bezier_control_points_arr_scaled = canvas_scalar * bezier_control_points_arr
     for i in range(len(bezier_control_points_arr)):
         cur_bzr_ctrl_pts = bezier_control_points_arr_scaled[i]
-        im += stroke_rasterizer(cur_bzr_ctrl_pts, radius_max=2, texture='random', canvas_shape=canvas_shape)
+        im += stroke_rasterizer(cur_bzr_ctrl_pts, radius_max=5, texture='random', canvas_shape=canvas_shape)
     im /= np.max(im)  # For visualization only - indicates how many times a pixel has been coloured. Make sure no clip.
-    return np.clip(np.log2(im + 1), 0, 1)
+    return np.clip(np.log2(im + 1), 0, 1)  # Original.
 
 
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------
@@ -234,3 +260,51 @@ def strokes_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920), can
 #     t_vec = np.array([1, t, t**2, t**3])
 #     point = np.matmul(np.matmul(bezier_control_points, bezier_mat), t_vec)
 #     return point
+#
+#
+# def draw_circle0(r):
+#     d = 2 * r - 1
+#     stroke = np.ones((d, d))
+#     # Constructing quarter of a circle.
+#     for x in range(r):
+#         for y in range(r):
+#             dist = np.round(np.sqrt(x ** 2 + y ** 2))
+#             if dist > r:
+#                 stroke[x][y] = 0
+#     # Reflecting along the vertical axis. Now we have half a circle.
+#     stroke *= stroke[::-1]
+#     # Reflecting along the horizontal axis. Now we have full a circle.
+#     stroke *= stroke[::, ::-1]
+#     return stroke
+#
+#
+# def pixel_stroke0(p, grad, r, shape='circle', texture='solid', blur_kernel=3, opacity=1):
+#     # Creating basic stroke shape.
+#     stroke_diameter = 4 * r + 1
+#     stroke = np.zeros((stroke_diameter, stroke_diameter))
+#     if shape == 'circle':
+#         stroke[r + 1:3 * r, r + 1:3 * r] = draw_circle(r)
+#     if shape == 'square':
+#         d = 2 * r - 1
+#         stroke[r + 1:3 * r, r + 1:3 * r] = np.ones((d, d))
+#     stroke = scipy.signal.convolve2d(stroke, Vectorizer.gaussian_kernel(blur_kernel), mode='same')
+#     # Adding texture.
+#     stroke = add_texture(p, grad, stroke_diameter, stroke, texture)
+#     # Applying opacity + considering interpolation.
+#     stroke *= (opacity * (1 - np.linalg.norm(p - np.round(p))))
+#     return stroke
+#
+#
+# def stroke_radius0(radius_min, radius_max, width_style, n, i):
+#     # radius_style: log, root, linear, uniform.
+#     d = i
+#     c = 0
+#     if 2 * i > n:
+#         d = n - i
+#     if width_style == 'log':  # TODO: Replace with switch statement - better performance with numerous cases.
+#         c = np.log2(1 + (2 * d / n))
+#     elif width_style == 'root':
+#         c = np.sqrt(2 * d / n)
+#     elif width_style == 'linear':
+#         c = 2 * d / n
+#     return np.uint16(np.round(radius_min + c * (radius_max - radius_min)))

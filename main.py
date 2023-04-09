@@ -4,6 +4,7 @@ from scipy import ndimage
 from scipy import sparse
 from scipy import signal
 import matplotlib.pyplot as plt
+import math
 import FileManager
 import EdgeDetector
 import Vectorizer
@@ -14,7 +15,13 @@ import Tests
 
 if __name__ == '__main__':
     # a = np.empty((0, 4, 2), np.float64)
-    # b = np.array([[1, 1], [2, 1], [3, 1], [4, 1]])
+    # r = 1.9
+    # r_r = math.ceil(r)
+    # x = np.linspace(-r_r, r_r, 2 * r_r + 1)
+    # y = np.linspace(-r_r, r_r, 2 * r_r + 1)
+    # xx, yy = np.meshgrid(x, y)
+    # d = np.clip(r - np.sqrt(xx ** 2 + yy ** 2), 0, 1)
+    # print(d)
     # c = np.array([[6, 6], [3, 5], [2, 5]])
     # d = {1: np.array([[1, 1], [2, 1], [3, 1], [4, 1]]), 2: np.array([[2, 5], [3, 5], [6, 6]])}
     # z = map(np.ndarray.tolist, d.values())
@@ -50,8 +57,11 @@ if __name__ == '__main__':
     # Tests.save_rgba_check()
     # Tests.pixels_count()
     # Tests.vector_strokes_displacement_check(FileManager.FRAME_IN, FileManager.RAST_DIR_OUT)
+    # Tests.vectorize_check()
     # Tests.vectorize_check_mac()
-    Tests.read_bzr_ctrl_pts_from_file_check()
+    # Tests.write_bzr_ctrl_pts_to_file_check()
+    # Tests.read_bzr_ctrl_pts_from_file_check()
+    Tests.displace_sequence_bcp_from_file_check(72)
     # Tests.displacement_check(FileManager.FRAME_IN, FileManager.VEC_DIR_OUT)
     # Tests.displacement_sequence_check_mac(FileManager.FRAME_IN_MAC,
     #                                       '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector/Sequence', 24)

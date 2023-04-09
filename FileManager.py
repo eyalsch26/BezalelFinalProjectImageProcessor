@@ -42,7 +42,7 @@ def save_image(dir_path, image_frame, frame_index, name_suffix, as_grayscale=Tru
 def save_rgba_image(dir_path, f_name, im_rgb, im_alpha):
     # Naming the path of the new frame to be saved.
     path = dir_path + '\\' + f_name + '.png'
-    im_rgba = (255 * np.dstack((im_rgb, im_alpha))).astype(np.uint8)
+    im_rgba = (255 * np.clip(np.dstack((im_rgb, im_alpha)), 0, 1)).astype(np.uint8)
     # Saving the path.
     plt.imsave(path, im_rgba)
     return
@@ -58,7 +58,6 @@ def import_bezier_control_points(path):
 
 def save_bezier_control_points(path, bzr_ctrl_pts_arr):
     with open(path, mode='w') as output_file:
-        output_file.write(str(len(bzr_ctrl_pts_arr)) + '\n')
         for single_curve in bzr_ctrl_pts_arr:
             np.savetxt(output_file, single_curve, fmt='%-50.32f')
             output_file.write('#\n')

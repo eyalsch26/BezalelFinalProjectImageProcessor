@@ -556,18 +556,18 @@ def calculate_path_curve_error(path, curve):
     return error
 
 
-def recover_bezier_control_points(path, threshold=0.15):  # Original threshold=0.25. With 0.15 Artifacts gone.
+def recover_bezier_control_points(path, threshold=0.15, min_path_l=45):  # Original threshold=0.25. 0.15 Artifacts gone.
     path_l = len(path)
     bzr_ctrl_pts_dict = dict()
     bzr_ctrl_pts = calculate_bezier_control_points(path)
-    if path_l <= 5:
+    if path_l <= min_path_l:  # Original: <= 5.
         bzr_ctrl_pts_dict[0] = bzr_ctrl_pts
         return bzr_ctrl_pts_dict
     curve = Rasterizer.bezier_curve_points(bzr_ctrl_pts)
     err = calculate_path_curve_error(path, curve)
     if err > threshold:
-        bzr_ctrl_pts_dict_0 = recover_bezier_control_points(path[:1 + len(path)//2], threshold)
-        bzr_ctrl_pts_dict_1 = recover_bezier_control_points(path[len(path)//2:], threshold)
+        bzr_ctrl_pts_dict_0 = recover_bezier_control_points(path[:1 + len(path)//2], threshold, min_path_l)
+        bzr_ctrl_pts_dict_1 = recover_bezier_control_points(path[len(path)//2:], threshold, min_path_l)
         bzr_curve_num_0 = len(bzr_ctrl_pts_dict_0)
         bzr_curve_num_1 = len(bzr_ctrl_pts_dict_1)
         for i in range(bzr_curve_num_0):
@@ -581,12 +581,13 @@ def recover_bezier_control_points(path, threshold=0.15):  # Original threshold=0
 
 def trace_edges_to_bezier(edges_im, corner_im):  # TODO: Convert For loops to map() - better performance in all files.
     paths_dict = trace_edges_to_paths(edges_im, corner_im)
+    m_p_l = edges_im.shape[0] // 16
     bzr_ctrl_pts_dict = dict()
     curves_connectivity_arr = np.array([])
     paths_num = len(paths_dict)
     curves_num = 0
     for p in range(paths_num):
-        cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p])
+        cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p], min_path_l=m_p_l)
         cur_curves_num = len(cur_bzr_ctrl_pts_dict)
         for c in range(cur_curves_num):
             bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]
@@ -652,9 +653,9 @@ def displace_bezier_control_points(bezier_control_points, factor=8, translate=16
     return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
 
 
-def displace_bezier_curves(bezier_control_points_arr):
+def displace_bezier_curves(bezier_control_points_arr, factor=8, translate=16):
     new_bzr_ctrl_pts_arr = np.empty((0, 4, 2), dtype=np.float64)
     for bzr_ctrl_pts in bezier_control_points_arr:
-        new_bzr_ctrl_pts = displace_bezier_control_points(bzr_ctrl_pts)
+        new_bzr_ctrl_pts = displace_bezier_control_points(bzr_ctrl_pts, factor, translate)
         new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
     return new_bzr_ctrl_pts_arr

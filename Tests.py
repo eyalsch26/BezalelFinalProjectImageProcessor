@@ -1,3 +1,4 @@
+import time
 import os
 import numpy as np
 import scipy
@@ -63,20 +64,21 @@ def write_bzr_ctrl_pts_to_file_check():
     im_y = im_yiq[:, :, 0]
     # Computing the image's edges' bezier control points.
     bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
-    FileManager.save_bezier_control_points(FileManager.TEXT_DIR + '\\test1.txt', bzr_ctrl_pts_arr)
+    FileManager.save_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt', bzr_ctrl_pts_arr)
 
 
 # Works.
 def read_bzr_ctrl_pts_from_file_check():
-    output_shape = (1080, 1920)
+    output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0]/720
     im_i = np.zeros(output_shape)
     im_q = np.zeros(output_shape)
-    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test0.txt')
-    raster_im = Rasterizer.strokes_rasterizer(bzr_ctrl_pts_arr, canvas_shape=output_shape, canvas_scalar=1.5)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
+    raster_im = Rasterizer.strokes_rasterizer(bzr_ctrl_pts_arr, canvas_shape=output_shape, canvas_scalar=c_s)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
     im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
-    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFile0', im_rgb, im_alpha)
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement10', im_rgb, im_alpha)
 
 
 # Vectorizer -----------------------------------------------------------------------------------------------------------
@@ -260,7 +262,7 @@ def vectorize_check():
     raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 54, f'Dog02VectorizeHD720', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 56, f'Dog02VectorizeHD720', True)
 
 
 # Works.
@@ -526,4 +528,38 @@ def save_rgba_check():
     im_alpha = Colourizer.alpha_channel(im_yiq[:, :, 0], alpha='y')  # Original: im_yiq[:, :, 0]
     im_rgb = Colourizer.yiq_to_rgb(im_yiq)
     # im_rgba = (255 * np.dstack((im_rgb, im_alpha))).astype(np.uint8)  # Original.
-    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogAlphaBinary', im_rgb, im_alpha)
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogAlphaY1', im_rgb, im_alpha)
+
+
+def displace_bcp_from_file_check():
+    output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0]/720
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
+    new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=c_s)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement10', im_rgb, im_alpha)
+
+
+def displace_sequence_bcp_from_file_check(frames_num):
+    t_s = time.time()
+    output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0]/720
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
+    for i in range(frames_num):
+        f = (i // 4) + 1
+        new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr, f, 2 * f)
+        raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=c_s)
+        im_yiq_new = np.dstack((raster_im, im_i, im_q))
+        im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+        im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
+        FileManager.save_bezier_control_points(FileManager.TEXT_DIR + f'\\DogDisplaceBCP{i}.txt', new_bzr_ctrl_pts)
+        FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, f'DogFromFileDisplacement{i}', im_rgb, im_alpha)
+    t_e = time.time()
+    print(t_e - t_s)  # Date: 10.4.2023: 1494.85511474132538 (which is ~20.75 seconds per frame).
