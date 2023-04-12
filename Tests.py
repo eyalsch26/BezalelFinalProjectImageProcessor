@@ -542,7 +542,7 @@ def displace_bcp_from_file_check():
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
     im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
-    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement10', im_rgb, im_alpha)
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement16', im_rgb, im_alpha)
 
 
 def displace_sequence_bcp_from_file_check(frames_num):
@@ -562,4 +562,60 @@ def displace_sequence_bcp_from_file_check(frames_num):
         FileManager.save_bezier_control_points(FileManager.TEXT_DIR + f'\\DogDisplaceBCP{i}.txt', new_bzr_ctrl_pts)
         FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, f'DogFromFileDisplacement{i}', im_rgb, im_alpha)
     t_e = time.time()
-    print(t_e - t_s)  # Date: 10.4.2023: 1494.85511474132538 (which is ~20.75 seconds per frame).
+    print(t_e - t_s)  # Date: 10.4.2023: 1494.8511474132538 (which is ~20.75 seconds per frame).
+
+
+def distort_bcp_from_file_check():
+    output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0]/720
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
+    new_bzr_ctrl_pts = Vectorizer.distort_bezier_curves(bzr_ctrl_pts_arr, 10)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=c_s)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement19', im_rgb, im_alpha)
+
+
+def displace_distort_bcp_from_file_check():
+    output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0]/720
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
+    new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr, 42, 12)
+    new_bzr_ctrl_pts = Vectorizer.distort_bezier_curves(new_bzr_ctrl_pts, 8)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=c_s)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+    im_alpha = Colourizer.alpha_channel(raster_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement34', im_rgb, im_alpha)
+
+
+def colour_image_check():
+    im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
+                                  '\DogFromFileDisplacement27.png')
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    y_im = im_yiq[:, :, 0]
+    im_rgb_cur = Colourizer.yiq_to_rgb(im_yiq)
+    im_rgb = Colourizer.colour_stroke(im_rgb_cur, 1.0, 0.49, 0.0, 'original')
+    im_alpha = Colourizer.alpha_channel(y_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogColour2', im_rgb, im_alpha)
+
+
+def displace_distort_colour_bcp_from_file_check():
+    output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0]/720
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
+    new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr, 42, 12)
+    new_bzr_ctrl_pts = Vectorizer.distort_bezier_curves(new_bzr_ctrl_pts, 8)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=c_s)
+    im_yiq_new = np.dstack((raster_im, im_i, im_q))
+    im_rgb_cur = Colourizer.yiq_to_rgb(im_yiq_new)
+    im_rgb = Colourizer.colour_stroke(im_rgb_cur, 1.0, 0.49, 0)
+    im_alpha = Colourizer.alpha_channel(raster_im, alpha='b')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement38', im_rgb, im_alpha)

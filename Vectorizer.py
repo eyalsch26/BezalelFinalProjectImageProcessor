@@ -659,3 +659,33 @@ def displace_bezier_curves(bezier_control_points_arr, factor=8, translate=16):
         new_bzr_ctrl_pts = displace_bezier_control_points(bzr_ctrl_pts, factor, translate)
         new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
     return new_bzr_ctrl_pts_arr
+
+
+def distort_bezier_control_points(bezier_control_points, factor=2):
+    # Setting local variables.
+    p_0 = bezier_control_points[0]
+    p_1 = bezier_control_points[1]
+    p_2 = bezier_control_points[2]
+    p_3 = bezier_control_points[3]
+    # Generating a random distortion vector for each control point.
+    rndm_vecs = np.random.randint(1, 11, (4, 2)) * 0.1
+    vecs_nrml = rndm_vecs / np.sqrt(np.einsum('...i, ...i', rndm_vecs, rndm_vecs))[..., np.newaxis]
+    vecs_f = vecs_nrml * factor
+    rndm_vec_p_0 = vecs_f[0]
+    rndm_vec_p_1 = vecs_f[1]
+    rndm_vec_p_2 = vecs_f[2]
+    rndm_vec_p_3 = vecs_f[3]
+    # Calculating the new control points.
+    p_0_new = p_0 + rndm_vec_p_0
+    p_1_new = p_1 + rndm_vec_p_1
+    p_2_new = p_2 + rndm_vec_p_2
+    p_3_new = p_3 + rndm_vec_p_3
+    return np.array([p_0_new, p_1_new, p_2_new, p_3_new])  # TODO: Check for index out of bounds.
+
+
+def distort_bezier_curves(bezier_control_points_arr, factor=2):
+    new_bzr_ctrl_pts_arr = np.empty((0, 4, 2), dtype=np.float64)
+    for bzr_ctrl_pts in bezier_control_points_arr:
+        new_bzr_ctrl_pts = distort_bezier_control_points(bzr_ctrl_pts, factor)
+        new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
+    return new_bzr_ctrl_pts_arr

@@ -40,3 +40,14 @@ def alpha_channel(im_y, alpha='n', c=1):
     elif alpha == 'c':  # C for constant coefficient.
         return c * (im_y != 0)
     return np.ones(im_y.shape)
+
+
+def colour_stroke(stroke, r, g, b, mode='original'):
+    c = 1
+    if mode == 'random':
+        c = np.random.randint(1, 11) * 0.1
+    r_stroke = stroke[::, ::, :1:] * r * c
+    g_stroke = stroke[::, ::, 1:2:] * g * c
+    b_stroke = stroke[::, ::, 2::] * b * c
+    coloured_stroke = np.dstack((r_stroke, g_stroke, b_stroke))
+    return coloured_stroke

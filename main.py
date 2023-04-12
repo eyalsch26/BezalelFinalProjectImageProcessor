@@ -22,7 +22,11 @@ if __name__ == '__main__':
     # xx, yy = np.meshgrid(x, y)
     # d = np.clip(r - np.sqrt(xx ** 2 + yy ** 2), 0, 1)
     # print(d)
-    # c = np.array([[6, 6], [3, 5], [2, 5]])
+    # c = np.ones((9, 16, 3))
+    # c[::, ::, :1:] *= 3
+    # c[::, ::, 1:2:] *= 4
+    # c[::, ::, 2::] *= 5
+    # print(c)
     # d = {1: np.array([[1, 1], [2, 1], [3, 1], [4, 1]]), 2: np.array([[2, 5], [3, 5], [6, 6]])}
     # z = map(np.ndarray.tolist, d.values())
     # c = np.append(a, [b], axis=0)
@@ -61,7 +65,10 @@ if __name__ == '__main__':
     # Tests.vectorize_check_mac()
     # Tests.write_bzr_ctrl_pts_to_file_check()
     # Tests.read_bzr_ctrl_pts_from_file_check()
-    Tests.displace_sequence_bcp_from_file_check(72)
+    # Tests.colour_image_check()
+    Tests.displace_distort_colour_bcp_from_file_check()
+    # Tests.displace_bcp_from_file_check()
+    # Tests.displace_sequence_bcp_from_file_check(72)
     # Tests.displacement_check(FileManager.FRAME_IN, FileManager.VEC_DIR_OUT)
     # Tests.displacement_sequence_check_mac(FileManager.FRAME_IN_MAC,
     #                                       '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector/Sequence', 24)
