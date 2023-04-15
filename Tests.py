@@ -613,7 +613,7 @@ def displace_distort_colour_bcp_from_file_check():
     bzr_ctrl_pts_arr = FileManager.import_bezier_control_points(FileManager.TEXT_DIR + '\\test2.txt')
     new_bzr_ctrl_pts = Vectorizer.displace_bezier_curves(bzr_ctrl_pts_arr, 42, 12)
     new_bzr_ctrl_pts = Vectorizer.distort_bezier_curves(new_bzr_ctrl_pts, 8)
-    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, canvas_shape=output_shape, canvas_scalar=c_s)
+    raster_im = Rasterizer.strokes_rasterizer(new_bzr_ctrl_pts, 3, 10, canvas_shape=output_shape, canvas_scalar=c_s)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb_cur = Colourizer.yiq_to_rgb(im_yiq_new)
     im_rgb = Colourizer.colour_stroke(im_rgb_cur, 1.0, 0.49, 0)
