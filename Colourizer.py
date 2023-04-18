@@ -66,21 +66,3 @@ def colour_stroke(stroke, r, g, b, mode='original'):
     b_stroke = stroke[::, ::, 2::] * b * c
     coloured_stroke = np.dstack((r_stroke, g_stroke, b_stroke))
     return coloured_stroke
-
-
-def generate_background(shape):
-    output_shape = (720, 1280)  # (1080, 1920)
-    c_s = output_shape[0] / 720
-    im_i = np.zeros(output_shape)
-    im_q = np.zeros(output_shape)
-    bcp = np.array([[shape[0], 0], [0.67 * shape[0], 0.3 * shape[1]], [0.3 * shape[0], 0.67 * shape[1]], [0, shape[1]]])
-    y_im = Rasterizer.strokes_rasterizer(bcp, 10, 15, canvas_shape=shape, canvas_scalar=1)
-    # x = np.linspace(0, shape[0] + 1, shape[0] + 1)
-    # y = np.linspace(0, shape[1] + 1, shape[1] + 1)
-    # xx, yy = np.meshgrid(x, y)
-    # xx += 45
-    # yy -= 45
-    im_rgb = yiq_to_rgb(y_im)
-    im_rgb = colour_stroke(im_rgb, 1.0, 0.49, 0.0, 'original')
-    im_alpha = alpha_channel(y_im, alpha='y')
-    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogColour2', im_rgb, im_alpha)

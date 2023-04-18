@@ -689,3 +689,31 @@ def distort_bezier_curves(bezier_control_points_arr, factor=2):
         new_bzr_ctrl_pts = distort_bezier_control_points(bzr_ctrl_pts, factor)
         new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
     return new_bzr_ctrl_pts_arr
+
+
+def collapse_curves(bzr_ctrl_pts_arr, r_f):  # r_f stands for reduce_factor.
+    center = np.average(bzr_ctrl_pts_arr, axis=(0, 1))  # Point to collapse to.
+    r_bzr_ctrl_pts = bzr_ctrl_pts_arr[::int(r_f ** (-1))]
+    r_bzr_ctrl_pts_vecs = r_f * (center - r_bzr_ctrl_pts)
+    n_bzr_ctrl_pts = r_bzr_ctrl_pts + r_bzr_ctrl_pts_vecs
+    return n_bzr_ctrl_pts
+
+
+# ------------------------------------------------ Vector Generation ---------------------------------------------------
+def generate_source_background(shape, density=1, angle=45):
+    factor = 2 ** density
+    # output_shape = (720, 1280)  # (1080, 1920)
+    c_s = output_shape[0] / 720
+    im_i = np.zeros(output_shape)
+    im_q = np.zeros(output_shape)
+    bcp = np.array([[shape[0], 0], [0.67 * shape[0], 0.3 * shape[1]], [0.3 * shape[0], 0.67 * shape[1]], [0, shape[1]]])
+    y_im = Rasterizer.strokes_rasterizer(bcp, 10, 15, canvas_shape=shape, canvas_scalar=1)
+    # x = np.linspace(0, shape[0] + 1, shape[0] + 1)
+    # y = np.linspace(0, shape[1] + 1, shape[1] + 1)
+    # xx, yy = np.meshgrid(x, y)
+    # xx += 45
+    # yy -= 45
+    im_rgb = yiq_to_rgb(y_im)
+    im_rgb = colour_stroke(im_rgb, 1.0, 0.49, 0.0, 'original')
+    im_alpha = alpha_channel(y_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogColour2', im_rgb, im_alpha)

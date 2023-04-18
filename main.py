@@ -31,7 +31,13 @@ if __name__ == '__main__':
     # z = map(np.ndarray.tolist, d.values())
     # c = np.append(a, [b], axis=0)
     # print(c)
-    # d = np.array([[[0.0, 1.0], [1, 2.2]], [[0, 0], [1, 0]]])
+    d = np.array([[[0, 1], [1, 2], [0, 1], [1, 2]],
+                  [[0, 3], [1, 4], [0, 5], [1, 6]],
+                  [[0, 7], [1, 8], [0, 9], [1, 10]]])
+    e = np.average(d, axis=(0, 1))
+    p = e - d
+    print(e)
+    print(p)
     # c = np.zeros((np.max(d) + 1, np.max(d) + 1))
     # d_flatten = d[0].T[0] * 2 + d[0].T[1]
     # np.put(c, d_flatten, 1)
@@ -66,7 +72,7 @@ if __name__ == '__main__':
     # Tests.write_bzr_ctrl_pts_to_file_check()
     # Tests.read_bzr_ctrl_pts_from_file_check()
     # Tests.colour_image_check()
-    Tests.displace_distort_colour_bcp_from_file_check()
+    # Tests.displace_distort_colour_bcp_from_file_check()
     # Tests.displace_bcp_from_file_check()
     # Tests.displace_sequence_bcp_from_file_check(72)
     # Tests.displacement_check(FileManager.FRAME_IN, FileManager.VEC_DIR_OUT)
