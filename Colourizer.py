@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 import FileManager
 import Rasterizer
@@ -66,3 +67,18 @@ def colour_stroke(stroke, r, g, b, mode='original'):
     b_stroke = stroke[::, ::, 2::] * b * c
     coloured_stroke = np.dstack((r_stroke, g_stroke, b_stroke))
     return coloured_stroke
+
+
+def watercolour_stroke_alpha(im, org, min_opc=0.25, type='linear'):
+    binary_im = im != 0
+    s = im.shape
+    x = np.linspace(0 - org[0], s[0] - org[0] - 1, s[0])
+    y = np.linspace(0 - org[1], s[1] - org[1] - 1, s[1])
+    xx, yy = np.meshgrid(x, y)
+    dist_mat = np.sqrt(xx ** 2 + yy ** 2)
+    alpha_im = dist_mat * binary_im
+    alpha_im += min_opc * np.max(alpha_im)
+    if type == 'log':
+        alpha_im = np.log2(alpha_im + 1)
+    alpha_im /= np.max(alpha_im)
+    return alpha_im

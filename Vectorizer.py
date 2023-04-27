@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import scipy.signal
 from scipy.ndimage.morphology import generate_binary_structure
@@ -420,6 +421,15 @@ def sort_neighbours_by_angle(origin_vec, neighbours, neighbours_vecs):
 
 
 def is_new_path(cur_path, traced_paths_dict):
+    """
+    Checks if a given path of pixels has already been traced, i.e. exists in the traced paths dictionary.
+    :param cur_path: A numpy array with dtype np.float64 and shape (x, 2) where x>0 is an integer representing the
+    number of pixels in the path.
+    :param traced_paths_dict: A dictionary where each key is an integer and the values are numpy array with same
+    properties as the cur_path.
+    :return: Boolean. True if the given path has already been traced (exists in the given paths dictionary) and False
+    otherwise.
+    """
     arr = map(np.ndarray.tolist, traced_paths_dict.values())
     x = cur_path.tolist() not in arr
     y = cur_path[::-1].tolist() not in arr
@@ -427,6 +437,21 @@ def is_new_path(cur_path, traced_paths_dict):
 
 
 def trace_edge_from_corner(edges_im, corners_im, p_0, traced_paths_dict):
+    """
+    Finds all the paths of pixels from a given corner in the image. Ideally the paths will end at a corner. These
+    paths will be later on converted to Bezier curves.
+    :param edges_im: A numpy array with dtype np.float64 representing the image of the edges where each edge is one
+    pixel wide.
+    :param corners_im: A numpy array with dtype np.float64 and shape equal to edges_im.shape representing the corners
+    in the image.
+    :param p_0: A numpy array with shape (, 2) and dtype np.float64 representing the coordinates of the corner to
+    start tracing the paths.
+    :param traced_paths_dict: A dictionary where the keys are integers representing the index of the traced paths
+    and the values are numpy arrays with dtype np.float64 and shape (x, 2) where x>0 is an integer representing the
+    number of pixels in the path. Each value is a path of pixels in the image from one corner to another.
+    :return: A numpy array with dtype np.float64 and shape (x, y, 2) where x>0 is an integer representing the
+    number of paths from the given corner, y>0 representing the pixels in the i'th path.
+    """
     cur_path = np.array([p_0])
     cur_vec = np.array([1, 1])
     paths_num = 0
@@ -480,6 +505,14 @@ def trace_edge_from_corner(edges_im, corners_im, p_0, traced_paths_dict):
 
 
 def trace_edges_to_paths(edges_im, corner_im):
+    """
+    Finds all the paths of pixels in the image.
+    :param edges_im: A numpy array with dtype np.float64. The shape has no influence of the calculation.
+    :param corner_im: A numpy array with dtype np.float64 and with shape as edges_im.shape.
+    :return: A dictionary where each key is an integer and each value is a numpy array with dtype np.float64 and
+    shape (x, 2) where 0<x resembling the number of pixels in the path. Each element in the numpy array corresponds
+    to the pixel's coordinates in the image.
+    """
     corners = np.argwhere(corner_im == 1)
     paths = dict()
     paths_num = 0
@@ -691,29 +724,90 @@ def distort_bezier_curves(bezier_control_points_arr, factor=2):
     return new_bzr_ctrl_pts_arr
 
 
-def collapse_curves(bzr_ctrl_pts_arr, r_f):  # r_f stands for reduce_factor.
+def collapse_curves(bzr_ctrl_pts_arr, r_f):
+    """
+    Moves the given bezier control points by a factor of r_f to the center of all points.
+    :param bzr_ctrl_pts_arr: A numpy array with shape (x, 4, 2) and dtype np.float64 where 0<x represents the number of
+    bezier curves.
+    :param r_f: A scalar with dtype np.float64 in range (0, 1] which represents the amount to reduce the points by. r_f
+    stands for reduce_factor. The factor determines to what distance to cut from the given points to the
+    center of mass. For example, if the f_d is 0.2, than the distance that will be reduced from each point to the
+    center of mass will be 0.2, hence the eventually the distance from each point to the center of the mass will be
+    0.8. In addition, the number of curves will be diminished respectively to r_f, e.g. if r_f equals to 0.2,
+    every eighth curve will be removed from the final array.
+    :return: A numpy array with shape (y, 4, 2) where 0<y<x with dtype np.float64 representing the new collapsed
+    points array.
+    """
     center = np.average(bzr_ctrl_pts_arr, axis=(0, 1))  # Point to collapse to.
-    r_bzr_ctrl_pts = bzr_ctrl_pts_arr[::int(r_f ** (-1))]
+    r_step = int(10 * (1 - r_f))
+    if r_step < 2:  # Step cannot be smaller than 2 otherwise all elements will be removed.
+        r_step = 2
+    r_bzr_ctrl_pts = np.delete(np.copy(bzr_ctrl_pts_arr), slice(None, None, r_step))  # Original [::int(r_f ** (-1))]
     r_bzr_ctrl_pts_vecs = r_f * (center - r_bzr_ctrl_pts)
     n_bzr_ctrl_pts = r_bzr_ctrl_pts + r_bzr_ctrl_pts_vecs
     return n_bzr_ctrl_pts
 
 
 # ------------------------------------------------ Vector Generation ---------------------------------------------------
-def generate_source_background(shape, density=1, angle=45):
-    factor = 2 ** density
-    # output_shape = (720, 1280)  # (1080, 1920)
-    c_s = output_shape[0] / 720
-    im_i = np.zeros(output_shape)
-    im_q = np.zeros(output_shape)
-    bcp = np.array([[shape[0], 0], [0.67 * shape[0], 0.3 * shape[1]], [0.3 * shape[0], 0.67 * shape[1]], [0, shape[1]]])
-    y_im = Rasterizer.strokes_rasterizer(bcp, 10, 15, canvas_shape=shape, canvas_scalar=1)
-    # x = np.linspace(0, shape[0] + 1, shape[0] + 1)
-    # y = np.linspace(0, shape[1] + 1, shape[1] + 1)
-    # xx, yy = np.meshgrid(x, y)
-    # xx += 45
-    # yy -= 45
-    im_rgb = yiq_to_rgb(y_im)
-    im_rgb = colour_stroke(im_rgb, 1.0, 0.49, 0.0, 'original')
-    im_alpha = alpha_channel(y_im, alpha='y')
-    FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogColour2', im_rgb, im_alpha)
+def unit_circle_bezier_control_points(origin):
+    m_p = 4 * (math.sqrt(2) - 1) / 3
+    i_qrt = np.array([[0, 1], [-m_p, 1], [-1, m_p], [-1, 0]])
+    ii_qrt = np.array([[-1, 0], [-1, -m_p], [0, -m_p], [0, -1]])
+    iii_qrt = np.array([[0, -1], [m_p, -1], [1, -m_p], [1, 0]])
+    iv_qrt = np.array([[1, 0], [1, m_p], [m_p, 1], [0, 1]])
+    crl_bzr_ctrl_pts = np.array([i_qrt, ii_qrt, iii_qrt, iv_qrt]) + origin
+    return crl_bzr_ctrl_pts
+
+
+def distort_circle(bzr_ctrl_pts, f):
+    d_vec = np.ones((12, 2)) * np.random.randint(0, f, size=12)
+    i = np.array([bzr_ctrl_pts[0][0] + d_vec[0], bzr_ctrl_pts[0][1] + d_vec[1], bzr_ctrl_pts[0][2] + d_vec[2],
+                  bzr_ctrl_pts[0][3] + d_vec[3]])
+    ii = np.array([bzr_ctrl_pts[1][0] + d_vec[3], bzr_ctrl_pts[1][1] + d_vec[4], bzr_ctrl_pts[1][2] + d_vec[5],
+                  bzr_ctrl_pts[1][3] + d_vec[6]])
+    iii = np.array([bzr_ctrl_pts[2][0] + d_vec[6], bzr_ctrl_pts[2][1] + d_vec[7], bzr_ctrl_pts[2][2] + d_vec[8],
+                  bzr_ctrl_pts[2][3] + d_vec[9]])
+    iv = np.array([bzr_ctrl_pts[3][0] + d_vec[9], bzr_ctrl_pts[3][1] + d_vec[10], bzr_ctrl_pts[3][2] + d_vec[11],
+                  bzr_ctrl_pts[3][3] + d_vec[0]])
+    d_crl_bzr_ctrl_pts = np.array([i, ii, iii, iv])
+    return d_crl_bzr_ctrl_pts
+
+
+def generate_animated_background_image(im_alpha, shape, rds=1, t=1, fps=24):
+    res_im = im_alpha
+
+    return res_im
+
+
+def generate_animated_background_sequence(shape, style='watercolour', rds=1, t=1, fps=24):
+    origin = np.array(shape[0], shape[1]) * 0.5
+    ctrl_pts = unit_circle_bezier_control_points(origin)
+    frames_num = t * fps
+    im_sq = np.empty((frames_num, shape[0], shape[1]), dtype=np.float64)
+    # im_y = np.ones(shape)
+    # im_i = np.zeros(shape)
+    # im_q = np.zeros(shape)
+    im_alpha = np.zeros(shape)
+    for i in range(frames_num):
+        ith_frame = generate_animated_background_image(im_alpha, shape, )
+        im_sq[i] = ith_frame
+    return im_sq
+
+
+# def generate_source_background(shape, density=1, angle=45):
+#     factor = 2 ** density
+#     # output_shape = (720, 1280)  # (1080, 1920)
+#     c_s = output_shape[0] / 720
+#     im_i = np.zeros(output_shape)
+#     im_q = np.zeros(output_shape)
+#     bcp = np.array([[shape[0], 0], [0.67 * shape[0], 0.3 * shape[1]], [0.3 * shape[0], 0.67 * shape[1]], [0, shape[1]]])
+#     y_im = Rasterizer.strokes_rasterizer(bcp, 10, 15, canvas_shape=shape, canvas_scalar=1)
+#     # x = np.linspace(0, shape[0] + 1, shape[0] + 1)
+#     # y = np.linspace(0, shape[1] + 1, shape[1] + 1)
+#     # xx, yy = np.meshgrid(x, y)
+#     # xx += 45
+#     # yy -= 45
+#     im_rgb = yiq_to_rgb(y_im)
+#     im_rgb = colour_stroke(im_rgb, 1.0, 0.49, 0.0, 'original')
+#     im_alpha = alpha_channel(y_im, alpha='y')
+#     FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogColour2', im_rgb, im_alpha)
