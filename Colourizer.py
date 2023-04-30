@@ -3,6 +3,7 @@ import math
 
 import FileManager
 import Rasterizer
+import Vectorizer
 
 
 def rgb_to_yiq_mat():
@@ -82,3 +83,12 @@ def watercolour_stroke_alpha(im, org, min_opc=0.25, type='linear'):
         alpha_im = np.log2(alpha_im + 1)
     alpha_im /= np.max(alpha_im)
     return alpha_im
+
+
+def colour_volume(im, r, g, b, d=3, style='noise'):
+    alpha = Vectorizer.blur_image(im != 0, d)
+    r_im = np.ones(im.shape) * r
+    g_im = np.ones(im.shape) * g
+    b_im = np.ones(im.shape) * b
+    coloured_volume = np.dstack((r_im, g_im, b_im, alpha))
+    return coloured_volume
