@@ -34,10 +34,9 @@ if __name__ == '__main__':
     d = np.array([[[0, 1], [1, 2], [0, 1], [1, 2]],
                   [[0, 3], [1, 4], [0, 5], [1, 6]],
                   [[0, 7], [1, 8], [0, 9], [1, 10]]])
-    e = np.average(d, axis=(0, 1))
-    p = e - d
-    print(e)
-    print(p)
+    e = np.array([1000, 2000, 3000]).reshape((3, 1))
+    d[::, ::, 1] += e
+    print(d)
     # c = np.zeros((np.max(d) + 1, np.max(d) + 1))
     # d_flatten = d[0].T[0] * 2 + d[0].T[1]
     # np.put(c, d_flatten, 1)

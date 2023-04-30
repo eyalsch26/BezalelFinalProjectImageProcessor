@@ -18,6 +18,9 @@ FRAMES_DIR_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Lif
 VEC_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector'
 RAST_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Raster'
 
+# Constants
+FPS = 24
+
 
 # ------------------------------------------- Importing & Saving Images ------------------------------------------------
 def import_image(path):

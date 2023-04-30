@@ -6,6 +6,7 @@ from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage import label, center_of_mass
 import Colourizer
 import Rasterizer
+import FileManager
 
 
 GAUSSIAN_KERNEL = 9
@@ -792,6 +793,31 @@ def generate_animated_background_sequence(shape, style='watercolour', rds=1, t=1
         ith_frame = generate_animated_background_image(im_alpha, shape, )
         im_sq[i] = ith_frame
     return im_sq
+
+
+def animate_shooting_stroke(bzr_ctrl_pts, t=1, r=2):
+    # r stands for ratio - the ratio between the length of the curve to its translation.
+    frames = FileManager.FPS * t
+    d_vec = bzr_ctrl_pts[3] - bzr_ctrl_pts[0]
+    vec = frames / 4 - np.abs(np.arange(int(frames / 2)) - frames / 4)
+    l_vec = r * np.concatenate((vec, np.zeros((0, int(frames / 2)))), axis=None) * np.repeat(d_vec, frames, axis=0)
+    bzr_ctrl_pts_sq = np.repeat(bzr_ctrl_pts, frames, axis=0)
+    bzr_ctrl_pts_sq[::, 0:1:] += l_vec
+    bzr_ctrl_pts_sq[::, 1:2:] += np.roll(l_vec, int(frames / 6))
+    bzr_ctrl_pts_sq[::, 2:3:] += np.roll(l_vec, int(frames / 3))
+    bzr_ctrl_pts_sq[::, 3::] += np.roll(l_vec, int(frames * 0.5))
+    return bzr_ctrl_pts_sq
+
+
+def generate_animated_shooting_strokes_background(shape, t=1, r=2):
+    bsc_bcp = np.array([[0, 0], [0, 1], [0, 2], [0, 3]])
+    stk_num = int(shape[0] * 0.5)
+    bcp = np.repeat(bsc_bcp, stk_num)
+    x = np.random.randint(0, shape[0], stk_num).reshape((stk_num, 1))
+    y = np.random.randint(0, shape[1], stk_num).reshape((stk_num, 1))
+    bcp[::, ::, 0] += x
+    bcp[::, ::, 1] += y
+    return bcp  # TODO: Not finished.
 
 
 # def generate_source_background(shape, density=1, angle=45):
