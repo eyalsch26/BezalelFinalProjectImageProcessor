@@ -47,6 +47,7 @@ def alpha_channel(im_y, alpha='n', c=1):
     b (binary) - an image where the alpha is 1 where the y channel is different than 0, and 0 otherwise.
     y (y channel) - an image which is a duplicate of the y channel.
     c (constant) - an image where all its values are equal to the c given as an argument.
+    r (random) - an image where all its values are random floats in the range [0, 1].
     :param c: A float. A constant to multiply the alpha channel by (if given).
     :return: A numpy array with shape equal to the im_y shape and dtype np.float64 in range [0,1].
     """
@@ -56,6 +57,8 @@ def alpha_channel(im_y, alpha='n', c=1):
         return im_y
     elif alpha == 'c':  # C for constant coefficient.
         return c * (im_y != 0)
+    elif alpha == 'r':
+        return (im_y != 0) * c * np.random.randint(0, 255, im_y.shape) / 255
     return np.ones(im_y.shape)
 
 
@@ -85,10 +88,20 @@ def watercolour_stroke_alpha(im, org, min_opc=0.25, type='linear'):
     return alpha_im
 
 
-def colour_volume(im, r, g, b, d=3, style='noise'):
-    alpha = Vectorizer.blur_image(im != 0, d)
-    r_im = np.ones(im.shape) * r
-    g_im = np.ones(im.shape) * g
-    b_im = np.ones(im.shape) * b
-    coloured_volume = np.dstack((r_im, g_im, b_im, alpha))
+def colour_volume(shape, r, g, b, tolerance=10, d=3, style='noise'):
+    # alpha = Vectorizer.blur_image(im != 0, d)
+    r_im = np.ones(shape) * r
+    g_im = np.ones(shape) * g
+    b_im = np.ones(shape) * b
+    if style == 'noise':
+        r_noise = np.random.randint(-tolerance, tolerance, shape) / 255
+        g_noise = np.random.randint(-tolerance, tolerance, shape) / 255
+        b_noise = np.random.randint(-tolerance, tolerance, shape) / 255
+        r_im += r_noise
+        g_im += g_noise
+        b_im += b_noise
+        r_im = Vectorizer.blur_image(r_im, d)
+        g_im = Vectorizer.blur_image(g_im, d)
+        b_im = Vectorizer.blur_image(b_im, d)
+    coloured_volume = np.clip(np.dstack((r_im, g_im, b_im)), 0, 1)
     return coloured_volume

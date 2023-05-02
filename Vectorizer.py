@@ -145,7 +145,7 @@ def blur_image(im, gaussian_kernel_size):
     """
     Blurs the given image by creating a blur kernel according to the given kernel size, padding the kernel to the
     shape of the given image, transforming both to the fourier domain, applying matrix multiplication element wise
-    :param im: A numpy array with dtype np.float64. The entries are in the range of [0, 1].
+    :param im: A 2D numpy array with dtype np.float64. The entries are in the range of [0, 1].
     :param gaussian_kernel_size: An odd integer representing the size of the gaussian kernel. For understanding
     using example see the documentation of the gaussian_kernel() function.
     :return: A numpy array with shape im.shape where the entries are of dtype np.float64. The returned image is the
@@ -528,6 +528,12 @@ def trace_edges_to_paths(edges_im, corner_im):
 
 
 def partition_indices(path):
+    """
+    Finds how many pixels should be in the rasterized Bezier curve.
+    :param path: A numpy array with dtype np.float64 and shape (x, 2) where x>0 represents the number of pixels in
+    the current path to be traced back to Bezier curve.
+    :return: An integer represents the number of pixels in the rasterized Bezier curve.
+    """
     path_len = len(path)
     path_len_2 = 2 * path_len
     partition_1 = path_len // 3

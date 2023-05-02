@@ -31,12 +31,12 @@ if __name__ == '__main__':
     # z = map(np.ndarray.tolist, d.values())
     # c = np.append(a, [b], axis=0)
     # print(c)
-    d = np.array([[[0, 1], [1, 2], [0, 1], [1, 2]],
-                  [[0, 3], [1, 4], [0, 5], [1, 6]],
-                  [[0, 7], [1, 8], [0, 9], [1, 10]]])
-    e = np.array([1000, 2000, 3000]).reshape((3, 1))
-    d[::, ::, 1] += e
-    print(d)
+    # d = np.array([[[0, 1], [1, 2], [0, 1], [1, 2]],
+    #               [[0, 3], [1, 4], [0, 5], [1, 6]],
+    #               [[0, 7], [1, 8], [0, 9], [1, 10]]])
+    # e = np.array([1000, 2000, 3000]).reshape((3, 1))
+    # d[::, ::, 1] += e
+    # print(d)
     # c = np.zeros((np.max(d) + 1, np.max(d) + 1))
     # d_flatten = d[0].T[0] * 2 + d[0].T[1]
     # np.put(c, d_flatten, 1)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # Tests.vectorize_check_mac()
     # Tests.write_bzr_ctrl_pts_to_file_check()
     # Tests.read_bzr_ctrl_pts_from_file_check()
-    # Tests.colour_image_check()
+    # Tests.colour_image_check_mac()
     # Tests.displace_distort_colour_bcp_from_file_check()
     # Tests.displace_bcp_from_file_check()
     # Tests.displace_sequence_bcp_from_file_check(72)
@@ -83,3 +83,4 @@ if __name__ == '__main__':
     # Tests.sequence_face_stroke_rasterizer_check()
     # Tests.my_edge_detection_check(0.975, 0.995)
     # Tests.my_corner_detection_check(0.975, 0.995)
+    Tests.volume_colourizer_check_mac()

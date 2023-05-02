@@ -378,6 +378,30 @@ def show_reel_mac(in_path, out_path, start, end, zero_pad):
         plt.imsave(out_path + n_padded + '.png', image_frame, cmap='gray')
 
 
+def volume_colourizer_check_mac():
+    # Preparing the image and the filter.
+    im = FileManager.import_image(FileManager.FRAME_IN_MAC)
+    r = np.max(im[::, ::, 0])
+    g = np.max(im[::, ::, 1])
+    b = np.max(im[::, ::, 2])
+    a = Vectorizer.blur_image(Colourizer.alpha_channel(im[::, ::, 3], 'r', 2), 9)
+    shape = im[:, :, 0].shape
+    # a = Vectorizer.blur_image(im[::, ::, 3] * np.random.randint(0, 255, shape) / 255, 7)
+    # im_rgb = Colourizer.colour_volume(shape, 1.0, 0.49, 0, 50, 9, 'noise')
+    im_rgb = Colourizer.colour_volume(shape, r, g, b, 50, 9, 'noise')
+    FileManager.save_rgba_image_mac(FileManager.CLR_DIR_OUT_MAC, '19VolumeColourHD720', im_rgb, a)
+
+
+def colour_image_check_mac():
+    im = FileManager.import_image(FileManager.FRAME_IN_MAC)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    y_im = im_yiq[:, :, 0]
+    im_rgb_cur = Colourizer.yiq_to_rgb(im_yiq)
+    im_rgb = Colourizer.colour_stroke(im_rgb_cur, 1.0, 0.49, 0.0, 'original')
+    im_alpha = Colourizer.alpha_channel(y_im, alpha='y')
+    FileManager.save_rgba_image(FileManager.CLR_DIR_OUT_MAC, 'DogColour2', im_rgb, im_alpha)
+
+
 # Rasterizer -----------------------------------------------------------------------------------------------------------
 def t_sparse_vec_check():
     t_orig = np.arange(10 + 1) / 10
