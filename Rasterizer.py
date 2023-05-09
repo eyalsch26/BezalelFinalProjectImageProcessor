@@ -10,6 +10,8 @@ BZ_DEG = 3
 BZ_CTRL_PTS = 4
 DIMS = 2
 MIN_OPACITY = 0.2
+TXR_NUM = 13  # 0: random. 1: solid. 2: chalk. 3: charcoal. 4: watercolour. 5: oil_dry. 6: oil_wet. 7: pen. 8: pencil.
+# 9: perlin_noise. 10: splash. 11: spark. 12: radius_division. 13: Bubble.
 
 
 def curve_partitions(bezier_control_points):
@@ -89,7 +91,34 @@ def bezier_curve_points(bezier_control_points):
     return pixels
 
 
+def generate_textures_arr(l, generation_method, uniform_txr=1, given_txr_arr=(0, 1)):
+    if generation_method == 'random':
+        txr_arr = np.arange(l) % TXR_NUM
+        return txr_arr
+    elif generation_method == 'uniformed':
+        txr_arr = np.ones(l) * uniform_txr
+        return txr_arr
+    elif generation_method == 'from_arr':
+        sub_arr_len = int(np.ceil(l / len(given_txr_arr)))
+        txr_arr = np.dstack((np.ones(sub_arr_len) * given_txr_arr[0]))
+        for i in range(1, len(txr_arr)):
+            txr_arr = np.dstack((np.ones(sub_arr_len) * txr_arr[i]))
+        return txr_arr
+    else:  # Default.
+        txr_arr = np.zeros(l)
+        return txr_arr
+
+
 def draw_circle(r):
+    r_r = math.floor(r)
+    x = np.linspace(-r_r, r_r, 2 * r_r + 1)
+    y = np.linspace(-r_r, r_r, 2 * r_r + 1)
+    xx, yy = np.meshgrid(x, y)
+    stroke = np.clip(r - np.sqrt(xx ** 2 + yy ** 2), 0, 1)
+    return stroke
+
+
+def draw_rim(r):
     r_r = math.floor(r)
     x = np.linspace(-r_r, r_r, 2 * r_r + 1)
     y = np.linspace(-r_r, r_r, 2 * r_r + 1)
@@ -115,6 +144,20 @@ def apply_chalk_texture(p, grad, r, stroke):
     x, y = np.meshgrid(m, m)
     f = (np.sum(p) * np.ones(stroke.shape)) % np.abs(1 + x + y) == r
     return stroke * f
+
+
+def apply_cloth_texture(p, grad, r, stroke):
+    x = np.ones((r, r))
+    y = np.ones((r, r))
+    x[::4] = 0
+    y[::2] = 0
+    txr = Vectorizer.blur_image(x * y.T * apply_random_texture(stroke), 3)
+    return stroke * txr
+
+
+def apply_filament_texture(k, stroke):  # TODO: Not working.
+    res_stroke = Vectorizer.blur_image(stroke, k)
+    return res_stroke
 
 
 def add_texture(p, stroke, texture='solid'):

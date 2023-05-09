@@ -555,6 +555,7 @@ def save_rgba_check():
     FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogAlphaY1', im_rgb, im_alpha)
 
 
+# Works.
 def displace_bcp_from_file_check():
     output_shape = (720, 1280)  # (1080, 1920)
     c_s = output_shape[0]/720
@@ -569,6 +570,7 @@ def displace_bcp_from_file_check():
     FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement16', im_rgb, im_alpha)
 
 
+# Works.
 def displace_sequence_bcp_from_file_check(frames_num):
     t_s = time.time()
     output_shape = (720, 1280)  # (1080, 1920)
@@ -589,6 +591,7 @@ def displace_sequence_bcp_from_file_check(frames_num):
     print(t_e - t_s)  # Date: 10.4.2023: 1494.8511474132538 (which is ~20.75 seconds per frame).
 
 
+# Works.
 def distort_bcp_from_file_check():
     output_shape = (720, 1280)  # (1080, 1920)
     c_s = output_shape[0]/720
@@ -603,6 +606,7 @@ def distort_bcp_from_file_check():
     FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement19', im_rgb, im_alpha)
 
 
+# Works.
 def displace_distort_bcp_from_file_check():
     output_shape = (720, 1280)  # (1080, 1920)
     c_s = output_shape[0]/720
@@ -618,6 +622,7 @@ def displace_distort_bcp_from_file_check():
     FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement34', im_rgb, im_alpha)
 
 
+# Works.
 def colour_image_check():
     im = FileManager.import_image('G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
                                   '\DogFromFileDisplacement27.png')

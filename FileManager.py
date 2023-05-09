@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from imageio.v2 import imread
 from matplotlib import image
 import Colourizer
+import Rasterizer
 import Vectorizer
 
 
@@ -64,6 +65,14 @@ def save_rgba_image_mac(dir_path, f_name, im_rgb, im_alpha):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Importing & Saving Vectors ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def import_bezier_control_points(path):
+    """
+    Extracts a numpy array of Bezier control points from a file. As a convention each file holds Bezier curves from a
+    specific image so cuvers for different images will be stored in different files.
+    :param path: String. The location of the file to extract the Bezier control points from (the name of the specific
+    file is included in the path).
+    :return: A numpy array with dtype np.float64 and with shape (x, 4, 2) where x>0 represents the number of curves
+    in the file.
+    """
     raw_data = np.loadtxt(path)
     bzr_ctrl_pts_num = int(len(raw_data) * 0.25)
     data = raw_data.reshape((bzr_ctrl_pts_num, 4, 2))
@@ -98,7 +107,7 @@ def volume_colourizer(in_path, out_path, start, end, digits_num, alpha_t, c, blr
         save_rgba_image(out_path, im_name + 'Rnd', im_rgb, a)
 
 
-def contour(in_path, out_path, start, end, digits_num, dst_f, dst_s, stk_min, stk_max, stk_styl):
+def contour(in_path, out_path, bcp_path, start, end, digits_num, dst_f, dst_s, stk_min, stk_max, stk_styl):
     n = end - start + 1  # Adding 1 to include the last index.
     for im_file_idx in range(1, n + 1):
         # Preparing the output file name.
@@ -108,10 +117,51 @@ def contour(in_path, out_path, start, end, digits_num, dst_f, dst_s, stk_min, st
         # Preparing the image.
         im_name = f'{in_path}{n_padded}.png'
         im = import_image(im_name)
-        # Finding the Bezier control points and saving to files.
-
+        # Finding the Bezier control points.
+        im_bcp = Vectorizer.vectorize_image(im)
+        # Saving the Bezier control points to a file.
+        bcp_f_name = f'{bcp_path}{n_padded}.txt'
+        save_bezier_control_points(bcp_f_name, im_bcp)
         # Reading the Bezier control points from files.
 
         # Rasterizing the curves.
 
         # Saving the images.
+
+
+# Content
+def vectorize_content_to_file(in_path, bcp_path, start, end, digits_num):
+    n = end - start + 1  # Adding 1 to include the last index.
+    # Iterating over the desired images.
+    for im_file_idx in range(1, n + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while (len(n_padded) < digits_num):
+            n_padded = f'0{n_padded}'
+        # Preparing the image.
+        im_name = f'{in_path}{n_padded}.png'
+        im = import_image(im_name)
+        # Finding the Bezier control points.
+        im_bcp = Vectorizer.vectorize_image(im)
+        # Saving the Bezier control points to a file.
+        bcp_f_name = f'{bcp_path}{n_padded}.txt'
+        save_bezier_control_points(bcp_f_name, im_bcp)
+
+
+def raster_content_from_file(bcp_path, out_path, start, end, digits_num, txr):
+    n = end - start + 1  # Adding 1 to include the last index.
+    # Iterating over the desired images.
+    for im_file_idx in range(1, n + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while (len(n_padded) < digits_num):
+            n_padded = f'0{n_padded}'
+        # Importing the Bezier control points from the text file.
+        bcp_f_name = f'{bcp_path}{n_padded}.txt'
+        bcp_arr = import_bezier_control_points(bcp_f_name)
+        # Rastering the curves.
+        curves_num = len(bcp_arr)
+        for crv_idx in range(curves_num):
+            cur_bcp = bcp_arr[crv_idx]
+            txr = Rasterizer.generate_textures_arr(curves_num, 'uniformed')# Defining texture.
+

@@ -51,9 +51,9 @@ if __name__ == '__main__':
     # q = np.max(r, axis=0)
     # print(r)
     # print(h)
-    # print(q)
     # print(np.ceil(0.5))
-    # e = np.ones((2 * r - 1, 2 * r - 1))
+    e = np.ones(10) % 2
+    print(e)
     # for row in range(r - 1):
     #     for column in range(r - 1):
     #         dist = np.round(np.sqrt((r - row) ** 2 + (r - column) ** 2))
@@ -83,4 +83,4 @@ if __name__ == '__main__':
     # Tests.sequence_face_stroke_rasterizer_check()
     # Tests.my_edge_detection_check(0.975, 0.995)
     # Tests.my_corner_detection_check(0.975, 0.995)
-    Tests.volume_colourizer_check_mac()
+    # Tests.volume_colourizer_check_mac()
