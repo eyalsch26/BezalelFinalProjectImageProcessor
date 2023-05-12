@@ -62,7 +62,28 @@ def alpha_channel(im_y, alpha='n', c=1):
     return np.ones(im_y.shape)
 
 
+def generate_colours_arr(l, generation_method, rgb_range):
+    if generation_method == 'random':
+        clr_arr = (np.random.randint(0, 256, 3 * l) / 255).reshape((l, 3))
+        return clr_arr
+    elif generation_method == 'range':
+        r = np.random.randint(rgb_range[0][0], rgb_range[0][1] + 1, l) / 255
+        g = np.random.randint(rgb_range[1][0], rgb_range[1][1] + 1, l) / 255
+        b = np.random.randint(rgb_range[2][0], rgb_range[2][1] + 1, l) / 255
+        clr_arr = np.dstack((r, g, b)).reshape(l, 3)
+        return clr_arr
+
+
 def colour_stroke(stroke, r, g, b, mode='original'):
+    """
+    Colours a given stoke with a given RGB data. The colouring can be made in different methods: random, original.
+    :param stroke: A numpy array with shape (x, y) where x,y>0 and dtype np.float64 in range [0, 1].
+    :param r:
+    :param g:
+    :param b:
+    :param mode:
+    :return:
+    """
     c = 1
     if mode == 'random':
         c = np.random.randint(1, 11) * 0.1

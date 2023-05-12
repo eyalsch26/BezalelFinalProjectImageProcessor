@@ -251,6 +251,7 @@ def bezier_curves_rasterizer(bezier_control_points_arr, canvas_shape=(1080, 1920
     return np.clip(im, 0, 1)
 
 
+# Works.
 def strokes_rasterizer(bezier_control_points_arr, radius_min=1, radius_max=5, radius_style='uniform',
                                 texture='random', canvas_shape=(1080, 1920), canvas_scalar=1.5):
     im = np.zeros(canvas_shape)

@@ -154,7 +154,9 @@ def vectorize_content_to_file(in_path, bcp_path, start, end, digits_num):
         save_bezier_control_points(bcp_f_name, im_bcp)
 
 
-def raster_content_from_file(bcp_path, out_path, start, end, digits_num, txr):
+def raster_content_from_file(prm_path, bcp_path, out_path, start, end, digits_num, txr, clr, rgb_range):
+    # Importing the parameters for the functions.
+    prm = import_content_parameters(prm_path)
     n = end - start + 1  # Adding 1 to include the last index.
     # Iterating over the desired images.
     for im_file_idx in range(1, n + 1):
@@ -167,7 +169,10 @@ def raster_content_from_file(bcp_path, out_path, start, end, digits_num, txr):
         bcp_arr = import_bezier_control_points(bcp_f_name)
         # Rastering the curves.
         curves_num = len(bcp_arr)
+        txr_arr = Rasterizer.generate_textures_arr(curves_num, txr)  # Defining texture.
+        clr_arr = Colourizer.generate_colours_arr(curves_num, clr, rgb_range)  # Defining colour.
         for crv_idx in range(curves_num):
             cur_bcp = bcp_arr[crv_idx]
-            txr = Rasterizer.generate_textures_arr(curves_num, 'uniformed')# Defining texture.
+            cur_txr = txr_arr[crv_idx]
+            cur_clr = clr_arr[crv_idx]
 
