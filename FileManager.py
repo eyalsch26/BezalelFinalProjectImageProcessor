@@ -26,8 +26,18 @@ FPS = 24
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Importing Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def import_content_parameters(path):
-    parameters = np.loadtxt(path)
+def import_parameters(path):
+    """
+    Imports from a given file location the parameters to pass to a renderer function. This is a generic function for
+    all renderer function. Each renderer function must verify that it imports the correct number of parameters.
+    :param path: String representing the global path to the parameters file.
+    :return: A numpy array with dtype float and/or str and with shape (x, 1) where x>0 is the number of parameters
+    in the file.
+    """
+    with open(path, mode='r') as f:
+        parameters = np.array([l.splitlines() for l in f.readlines()[1::2]]).flatten()
+        parameters = [float(p) if p.isdigit() else str(p) for p in parameters]
+    f.close()
     return parameters
 
 
@@ -113,6 +123,87 @@ def volume_colourizer(in_path, out_path, start, end, digits_num, alpha_t, c, blr
         save_rgba_image(out_path, im_name + 'Rnd', im_rgb, a)
 
 
+# Vectorization
+def vectorize_contour_to_file(parameters_path):
+    dir_in_path, f_prefix, dir_out_bcp_path, start, end, digits_num = import_parameters(parameters_path)
+    # Iterating over the desired images.
+    for im_file_idx in range(int(start), int(end) + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while (len(n_padded) < digits_num):
+            n_padded = f'0{n_padded}'
+        # Preparing the image.
+        im_name = f'{dir_in_path}\\{f_prefix}.{n_padded}.png'
+        im = import_image(im_name)
+        im_yiq = Colourizer.rgb_to_yiq(im)
+        im_y = im_yiq[:, :, 0]
+        # Finding the Bezier control points.
+        im_bcp = Vectorizer.vectorize_image(im_y)
+        # Saving the Bezier control points to a file.
+        bcp_f_name = f'{dir_out_bcp_path}\\{f_prefix}.{n_padded}.txt'
+        save_bezier_control_points(bcp_f_name, im_bcp)
+
+
+def raster_contour_from_file(parameters_path):
+    dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
+    canvas_output_y, contiguous, displace, displace_min, displace_max, displace_transform_max, distort, distort_min, \
+    distort_max, strk_w_min, strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, \
+    b_max, alpha, alpha_c, alpha_f = import_parameters(parameters_path)
+    cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
+    canvas_scaler = canvas_output_x / canvas_input_x
+    # Iterating over the desired images.
+    for im_file_idx in range(int(start), int(end) + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while (len(n_padded) < digits_num):
+            n_padded = f'0{n_padded}'
+        im_name = f'{f_prefix}.{n_padded}'
+        # Preparing the image.
+        im_r = np.zeros(cnvs_shape)
+        im_g = np.zeros(cnvs_shape)
+        im_b = np.zeros(cnvs_shape)
+        im_a = np.zeros(cnvs_shape)
+        im_sum = np.zeros(cnvs_shape)
+        # Importing the Bezier control points from the text file.
+        bcp_f_name = f'{dir_in_path}\\{f_prefix}.{n_padded}.txt'
+        bcp_arr = import_bezier_control_points(bcp_f_name)
+        bcp_arr *= canvas_scaler
+        # Applying vector manipulation.
+        idx_factor = (im_file_idx - start) / (end - start) if end > start else 1
+        if displace:
+            dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
+            dsp_t = int(idx_factor * displace_transform_max)
+            bcp_arr = Vectorizer.displace_bezier_curves(bcp_arr, dsp_f, dsp_t)
+        if distort:
+            dst_f = int(distort_min + idx_factor * (distort_max - distort_min))
+            bcp_arr = Vectorizer.distort_bezier_curves(bcp_arr, dst_f)
+        # Rastering the curves.
+        curves_num = len(bcp_arr)
+        txr_arr = Rasterizer.generate_textures_arr(curves_num, texture_style)  # Defining texture.
+        rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
+        clr_arr = Colourizer.generate_colours_arr(curves_num, colour_style, rgb_range)  # Defining colour.
+        for crv_idx in range(curves_num):
+            cur_bcp = bcp_arr[crv_idx]
+            cur_txr = txr_arr[crv_idx]
+            cur_clr = clr_arr[crv_idx]
+            stroke = Rasterizer.stroke_rasterizer(cur_bcp, strk_w_min, strk_w_max, texture=cur_txr, canvas_shape=cnvs_shape)
+            stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
+                                                                        Colourizer.CLR_DIM))
+            stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
+            im_r += stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+            im_g += stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+            im_b += stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+            alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+            im_a += alpha_im
+            im_sum += stroke != 0
+        im_sum[im_sum == 0] = 1
+        im_r /= im_sum
+        im_g /= im_sum
+        im_b /= im_sum
+        im_rgb = np.dstack((im_r, im_g, im_b))
+        save_rgba_image(dir_out_path, im_name, im_rgb, im_a)
+
+
 def contour(in_path, out_path, bcp_path, start, end, digits_num, dst_f, dst_s, stk_min, stk_max, stk_styl):
     n = end - start + 1  # Adding 1 to include the last index.
     for im_file_idx in range(1, n + 1):
@@ -156,7 +247,7 @@ def vectorize_content_to_file(in_path, bcp_path, start, end, digits_num):
 
 def raster_content_from_file(prm_path, bcp_path, out_path, start, end, digits_num, txr, clr, rgb_range):
     # Importing the parameters for the functions.
-    prm = import_content_parameters(prm_path)
+    prm = import_parameters(prm_path)
     n = end - start + 1  # Adding 1 to include the last index.
     # Iterating over the desired images.
     for im_file_idx in range(1, n + 1):

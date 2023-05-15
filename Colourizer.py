@@ -6,6 +6,10 @@ import Rasterizer
 import Vectorizer
 
 
+CLR_DIM = 3  # RGB.
+IM_DIM = 4  # RGBA.
+
+
 def rgb_to_yiq_mat():
     return np.array([[0.2989, 0.5870, 0.1140],
                      [0.5959, -0.2744, -0.3216],
@@ -37,7 +41,7 @@ def rgb_to_gray(image_frame):
     return np.dot(image_frame[..., :3], [0.2989, 0.5870, 0.1140])
 
 
-def alpha_channel(im_y, alpha='n', c=1):
+def alpha_channel(im_y, alpha='n', c=1, k=3):
     """
     Generate an alpha channel according to the method indicated for the final image.
     :param im_y: A numpy array with dtype np.float64 in range [0,1]. The y channel of the image.
@@ -49,10 +53,13 @@ def alpha_channel(im_y, alpha='n', c=1):
     c (constant) - an image where all its values are equal to the c given as an argument.
     r (random) - an image where all its values are random floats in the range [0, 1].
     :param c: A float. A constant to multiply the alpha channel by (if given).
+    :param k: An integer. A gaussian kernel to blur the binary alpha channel by (if given).
     :return: A numpy array with shape equal to the im_y shape and dtype np.float64 in range [0,1].
     """
     if alpha == 'b':  # B for binary.
         return im_y != 0
+    elif alpha == 'f':  # F for feather.
+        return Vectorizer.blur_image(im_y != 0, k)
     elif alpha == 'y':  # Y for y channel (yiq format).
         return im_y
     elif alpha == 'c':  # C for constant coefficient.

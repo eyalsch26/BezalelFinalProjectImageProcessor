@@ -160,11 +160,11 @@ def apply_filament_texture(k, stroke):  # TODO: Not working.
     return res_stroke
 
 
-def add_texture(p, stroke, texture='solid'):
+def add_texture(p, stroke, texture=1):
     # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
-    if texture == 'random':
+    if texture == 0:  # 'random'
         return apply_random_texture(stroke)
-    return stroke
+    return stroke  # 'solid'
 
 
 def stroke_radius(radius_min, radius_max, width_style, n, i):
@@ -196,7 +196,7 @@ def stroke_strength(strength_style, n, i):
     return MIN_OPACITY + (1 - MIN_OPACITY) * s
 
 
-def pixel_stroke(p, r, blur_kernel=3, texture='solid', opacity=1):
+def pixel_stroke(p, r, blur_kernel=3, texture=1, opacity=1):
     # Creating basic stroke shape.
     stroke = draw_circle(r)
     # Adding blur.
@@ -209,7 +209,7 @@ def pixel_stroke(p, r, blur_kernel=3, texture='solid', opacity=1):
 
 
 def stroke_rasterizer(bezier_control_points, radius_min=1, radius_max=5, radius_style='log', shape='circle',
-                      texture='solid', blur_kernel=3, strength_style='log', canvas_shape=(1080, 1920)):
+                      texture=1, blur_kernel=3, strength_style='log', canvas_shape=(1080, 1920)):
     # Preparing the image base.
     big_canvas = np.zeros(tuple(2 * np.asarray(canvas_shape)))
     original_zero_x = np.uint16(0.5 * canvas_shape[0])
@@ -259,7 +259,7 @@ def strokes_rasterizer(bezier_control_points_arr, radius_min=1, radius_max=5, ra
     for i in range(len(bezier_control_points_arr)):
         cur_bzr_ctrl_pts = bezier_control_points_arr_scaled[i]
         im += stroke_rasterizer(cur_bzr_ctrl_pts, radius_min, radius_max, 'uniform',
-                                texture='random', canvas_shape=canvas_shape)
+                                texture=0, canvas_shape=canvas_shape)
     im /= np.max(im)  # For visualization only - indicates how many times a pixel has been coloured. Make sure no clip.
     return np.clip(np.log2(im + 1), 0, 1)  # Original.
 

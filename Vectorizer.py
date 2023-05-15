@@ -697,7 +697,7 @@ def displace_bezier_control_points(bezier_control_points, factor=8, translate=16
     e = perpendicular_vec(d, norm='one')  # The perpendicular vector to d. (Dot product == 0).
     # Generating random coefficients to multiply the vectors by.
     rndm_factor = np.random.randint(0, factor)
-    rndm_trns = np.random.randint(-translate, translate)
+    rndm_trns = np.random.randint(-translate, translate) if translate != 0 else 0
     # Calculating the new control points.
     p_0_new = p_0 - rndm_factor * d + rndm_trns * e
     p_1_new = p_1 - 0.5 * rndm_factor * a + rndm_trns * e
