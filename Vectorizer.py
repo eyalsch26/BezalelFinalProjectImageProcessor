@@ -437,7 +437,7 @@ def is_new_path(cur_path, traced_paths_dict):
     return x and y
 
 
-def trace_edge_from_corner(edges_im, corners_im, p_0, traced_paths_dict):
+def trace_edge_from_corner(edges_im, corners_im, p_0, traced_paths_dict, min_path_len):
     """
     Finds all the paths of pixels from a given corner in the image. Ideally the paths will end at a corner. These
     paths will be later on converted to Bezier curves.
@@ -498,14 +498,14 @@ def trace_edge_from_corner(edges_im, corners_im, p_0, traced_paths_dict):
         # If the neighbour is a corner or its neighbours were all visited than it is the end of a path.
         if corners_im[cur_pxl[0], cur_pxl[1]] == 1 or all_neighbours_visited:
             new_path = is_new_path(cur_path, traced_paths_dict)  # Checks if the path already has been traced.
-            if len(cur_path) > 1 and new_path:
+            if len(cur_path) > min_path_len and new_path:  # Original: > 1
                 paths[paths_num] = cur_path
                 paths_num += 1
             cur_path = np.array([])
     return paths
 
 
-def trace_edges_to_paths(edges_im, corner_im):
+def trace_edges_to_paths(edges_im, corner_im, min_path_len):
     """
     Finds all the paths of pixels in the image.
     :param edges_im: A numpy array with dtype np.float64. The shape has no influence of the calculation.
@@ -519,7 +519,7 @@ def trace_edges_to_paths(edges_im, corner_im):
     paths_num = 0
     for i in range(len(corners)):
         corner = corners[i]
-        cur_paths = trace_edge_from_corner(edges_im, corner_im, corner, paths)
+        cur_paths = trace_edge_from_corner(edges_im, corner_im, corner, paths, min_path_len)
         cur_paths_num = len(cur_paths)
         for j in range(cur_paths_num):
             paths[paths_num + j] = cur_paths[j]
@@ -632,15 +632,14 @@ def recover_bezier_control_points(path, threshold=0.15, min_path_l=45):  # Origi
     return bzr_ctrl_pts_dict
 
 
-def trace_edges_to_bezier(edges_im, corner_im):  # TODO: Convert For loops to map() - better performance in all files.
-    paths_dict = trace_edges_to_paths(edges_im, corner_im)
-    m_p_l = edges_im.shape[0] // 16
+def trace_edges_to_bezier(edges_im, corner_im, min_path_len):  # TODO: Convert For loops to map() - better performance in all files.
+    paths_dict = trace_edges_to_paths(edges_im, corner_im, min_path_len)
     bzr_ctrl_pts_dict = dict()
     curves_connectivity_arr = np.array([])
     paths_num = len(paths_dict)
     curves_num = 0
     for p in range(paths_num):
-        cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p], min_path_l=m_p_l)
+        cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p], min_path_l=min_path_len)
         cur_curves_num = len(cur_bzr_ctrl_pts_dict)
         for c in range(cur_curves_num):
             bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]
@@ -649,10 +648,11 @@ def trace_edges_to_bezier(edges_im, corner_im):  # TODO: Convert For loops to ma
     return bzr_ctrl_pts_dict, curves_connectivity_arr
 
 
-def vectorize_image(im):
+def vectorize_image(im, min_crv_ratio=16):
     edges_im = detect_edges(im)
     corners_im = detect_corners(edges_im)
-    bzr_ctrl_pts_dict, connectivity_arr = trace_edges_to_bezier(edges_im, corners_im)
+    min_path_len = im.shape[0] // min_crv_ratio
+    bzr_ctrl_pts_dict, connectivity_arr = trace_edges_to_bezier(edges_im, corners_im, min_path_len)
     bzr_ctrl_pts_arr = np.array([bzr_ctrl_pts_dict[i] for i in range(len(bzr_ctrl_pts_dict))])
     return bzr_ctrl_pts_arr
     # p = np.random.randint(1, 11) / 10  # For showreel

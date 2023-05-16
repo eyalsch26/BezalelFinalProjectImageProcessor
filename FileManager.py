@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from matplotlib import pyplot as plt
 from imageio.v2 import imread
@@ -42,6 +41,13 @@ def import_parameters(path):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Importing & Saving Images ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def file_path(dir_path, file_name, num, os='w'):
+    f_path = f'{dir_path}\\{file_name}.{num}.png'  # Windows.
+    if os == 'm':  # Mac.
+        f_path = f'{dir_path}/{file_name}.{num}.png'
+    return f_path
+
+
 def import_image(path):
     frame = imread(path).astype(np.float64)
     if np.amax(frame) > 1:
@@ -61,7 +67,19 @@ def save_image(dir_path, image_frame, frame_index, name_suffix, as_grayscale=Tru
     return
 
 
-def save_rgba_image(dir_path, f_name, im_rgb, im_alpha):
+def save_rgba_image(dir_path, f_name, im_rgb, im_alpha, os='w'):
+    # Naming the path of the new frame to be saved.
+    path = dir_path + '\\' + f_name + '.png'
+    im_rgba = (255 * np.clip(np.dstack((im_rgb, im_alpha)), 0, 1)).astype(np.uint8)
+    if os == 'm':
+        path = dir_path + '/' + f_name + '.png'
+        im_rgba = (255 * np.clip(np.dstack((im_rgb, im_alpha)), 0, 1)).astype(np.uint8).copy(order='C')
+    # Saving the path.
+    plt.imsave(path, im_rgba)
+    return
+
+
+def save_rgba_image0(dir_path, f_name, im_rgb, im_alpha):
     # Naming the path of the new frame to be saved.
     path = dir_path + '\\' + f_name + '.png'
     im_rgba = (255 * np.clip(np.dstack((im_rgb, im_alpha)), 0, 1)).astype(np.uint8)
@@ -124,27 +142,28 @@ def volume_colourizer(in_path, out_path, start, end, digits_num, alpha_t, c, blr
 
 
 # Vectorization
-def vectorize_contour_to_file(parameters_path):
-    dir_in_path, f_prefix, dir_out_bcp_path, start, end, digits_num = import_parameters(parameters_path)
+def vectorize_contour_to_file(parameters_path, os='w'):
+    dir_in_path, f_prefix, dir_out_bcp_path, start, end, digits_num, min_crv_ratio = import_parameters(parameters_path)
     # Iterating over the desired images.
     for im_file_idx in range(int(start), int(end) + 1):
         # Preparing the input/output file name.
         n_padded = f'{im_file_idx}'
-        while (len(n_padded) < digits_num):
+        while len(n_padded) < digits_num:
             n_padded = f'0{n_padded}'
         # Preparing the image.
-        im_name = f'{dir_in_path}\\{f_prefix}.{n_padded}.png'
+        im_name = file_path(dir_in_path, f_prefix, n_padded, os)
         im = import_image(im_name)
         im_yiq = Colourizer.rgb_to_yiq(im)
         im_y = im_yiq[:, :, 0]
         # Finding the Bezier control points.
-        im_bcp = Vectorizer.vectorize_image(im_y)
+        im_bcp = Vectorizer.vectorize_image(im_y, min_crv_ratio)
         # Saving the Bezier control points to a file.
-        bcp_f_name = f'{dir_out_bcp_path}\\{f_prefix}.{n_padded}.txt'
+        bcp_f_name = file_path(dir_out_bcp_path, f_prefix, n_padded, os)
         save_bezier_control_points(bcp_f_name, im_bcp)
 
 
-def raster_contour_from_file(parameters_path):
+# Rasterization
+def raster_contour_from_file(parameters_path, os='w'):
     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
     canvas_output_y, contiguous, displace, displace_min, displace_max, displace_transform_max, distort, distort_min, \
     distort_max, strk_w_min, strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, \
@@ -155,7 +174,7 @@ def raster_contour_from_file(parameters_path):
     for im_file_idx in range(int(start), int(end) + 1):
         # Preparing the input/output file name.
         n_padded = f'{im_file_idx}'
-        while (len(n_padded) < digits_num):
+        while len(n_padded) < digits_num:
             n_padded = f'0{n_padded}'
         im_name = f'{f_prefix}.{n_padded}'
         # Preparing the image.
@@ -165,7 +184,7 @@ def raster_contour_from_file(parameters_path):
         im_a = np.zeros(cnvs_shape)
         im_sum = np.zeros(cnvs_shape)
         # Importing the Bezier control points from the text file.
-        bcp_f_name = f'{dir_in_path}\\{f_prefix}.{n_padded}.txt'
+        bcp_f_name = file_path(dir_in_path, f_prefix, n_padded, os)
         bcp_arr = import_bezier_control_points(bcp_f_name)
         bcp_arr *= canvas_scaler
         # Applying vector manipulation.
@@ -194,14 +213,17 @@ def raster_contour_from_file(parameters_path):
             im_g += stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
             im_b += stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
             alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
-            im_a += alpha_im
+            im_a += alpha_im  # Doesn't need averaging. Will be clipped in save_rgba_image().
             im_sum += stroke != 0
         im_sum[im_sum == 0] = 1
         im_r /= im_sum
         im_g /= im_sum
         im_b /= im_sum
+        # im_r /= curves_num
+        # im_g /= curves_num
+        # im_b /= curves_num
         im_rgb = np.dstack((im_r, im_g, im_b))
-        save_rgba_image(dir_out_path, im_name, im_rgb, im_a)
+        save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
 
 
 def contour(in_path, out_path, bcp_path, start, end, digits_num, dst_f, dst_s, stk_min, stk_max, stk_styl):

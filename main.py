@@ -14,9 +14,16 @@ import Tests
 
 
 if __name__ == '__main__':
-    # FileManager.vectorize_contour_to_file('G:\Eyal\Documents\Bezalel\FinalProject\ParametersFiles\ParametersFileVectorization_FormPOC.txt')
-    FileManager.raster_contour_from_file('G:\Eyal\Documents\Bezalel\FinalProject\ParametersFiles'
-                                  '\ParametersFileRasterization_FormPOC.txt')
+    # Windows
+    FileManager.vectorize_contour_to_file('', os='w')
+    # FileManager.raster_contour_from_file('', os='w')
+    # Mac
+    # FileManager.vectorize_contour_to_file(
+    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles'
+    #     '/ParametersFileVectorization_FormPOC.txt', os='m')
+    # FileManager.raster_contour_from_file(
+    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/ParametersFileRasterization_FormPOC.txt', os='m')
+
     # Tests.trace_edge_from_corner_basic_check()
     # Tests.save_rgba_check()
     # Tests.pixels_count()
