@@ -264,6 +264,15 @@ def strokes_rasterizer(bezier_control_points_arr, radius_min=1, radius_max=5, ra
     return np.clip(np.log2(im + 1), 0, 1)  # Original.
 
 
+def diminish_bcps_num(bezier_control_points_arr, min_l_r=0.5):
+    l_arr = list(map(curve_partitions, bezier_control_points_arr))
+    l_arr_max = np.max(l_arr)
+    l_max = min_l_r * l_arr_max
+    idx_arr = np.argwhere(l_arr >= l_max).flatten()
+    diminished_bcps = bezier_control_points_arr[idx_arr]
+    return diminished_bcps
+
+
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------
 
 # def bezier_curve_point(bezier_control_points, t):

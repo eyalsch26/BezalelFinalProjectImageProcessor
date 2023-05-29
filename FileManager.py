@@ -41,10 +41,10 @@ def import_parameters(path):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Importing & Saving Images ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def file_path(dir_path, file_name, num, os='w'):
-    f_path = f'{dir_path}\\{file_name}.{num}.png'  # Windows.
+def file_path(dir_path, file_name, num, ext='png', os='w'):
+    f_path = f'{dir_path}\\{file_name}.{num}.{ext}'  # Windows.
     if os == 'm':  # Mac.
-        f_path = f'{dir_path}/{file_name}.{num}.png'
+        f_path = f'{dir_path}/{file_name}.{num}.{ext}'
     return f_path
 
 
@@ -110,7 +110,7 @@ def import_bezier_control_points(path):
     raw_data = np.loadtxt(path)
     bzr_ctrl_pts_num = int(len(raw_data) * 0.25)
     data = raw_data.reshape((bzr_ctrl_pts_num, 4, 2))
-    return data
+    return data, bzr_ctrl_pts_num
 
 
 def save_bezier_control_points(path, bzr_ctrl_pts_arr):
@@ -151,23 +151,23 @@ def vectorize_contour_to_file(parameters_path, os='w'):
         while len(n_padded) < digits_num:
             n_padded = f'0{n_padded}'
         # Preparing the image.
-        im_name = file_path(dir_in_path, f_prefix, n_padded, os)
+        im_name = file_path(dir_in_path, f_prefix, n_padded, 'png', os)
         im = import_image(im_name)
         im_yiq = Colourizer.rgb_to_yiq(im)
         im_y = im_yiq[:, :, 0]
         # Finding the Bezier control points.
         im_bcp = Vectorizer.vectorize_image(im_y, min_crv_ratio)
         # Saving the Bezier control points to a file.
-        bcp_f_name = file_path(dir_out_bcp_path, f_prefix, n_padded, os)
+        bcp_f_name = file_path(dir_out_bcp_path, f_prefix, n_padded, 'txt', os)
         save_bezier_control_points(bcp_f_name, im_bcp)
 
 
 # Rasterization
 def raster_contour_from_file(parameters_path, os='w'):
     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
-    canvas_output_y, contiguous, displace, displace_min, displace_max, displace_transform_max, distort, distort_min, \
-    distort_max, strk_w_min, strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, \
-    b_max, alpha, alpha_c, alpha_f = import_parameters(parameters_path)
+    canvas_output_y, contiguous, diminish, diminish_min_l_r, displace, displace_min, displace_max, \
+    displace_transform_max, distort, distort_min, distort_max, strk_w_min, strk_w_max, texture_style, texture_type, \
+    colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, alpha_f = import_parameters(parameters_path)
     cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
     canvas_scaler = canvas_output_x / canvas_input_x
     # Iterating over the desired images.
@@ -184,11 +184,16 @@ def raster_contour_from_file(parameters_path, os='w'):
         im_a = np.zeros(cnvs_shape)
         im_sum = np.zeros(cnvs_shape)
         # Importing the Bezier control points from the text file.
-        bcp_f_name = file_path(dir_in_path, f_prefix, n_padded, os)
-        bcp_arr = import_bezier_control_points(bcp_f_name)
+        bcp_f_name = file_path(dir_in_path, f_prefix, n_padded, 'txt', os)
+        bcp_arr, bcp_num = import_bezier_control_points(bcp_f_name)
+        # Checking if there are any Bezier control points to raster.
+        if bcp_num < 1:
+            continue
         bcp_arr *= canvas_scaler
         # Applying vector manipulation.
         idx_factor = (im_file_idx - start) / (end - start) if end > start else 1
+        if diminish:
+            bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
         if displace:
             dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
             dsp_t = int(idx_factor * displace_transform_max)
@@ -209,16 +214,26 @@ def raster_contour_from_file(parameters_path, os='w'):
             stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
                                                                         Colourizer.CLR_DIM))
             stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
-            im_r += stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
-            im_g += stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
-            im_b += stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
-            alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
-            im_a += alpha_im  # Doesn't need averaging. Will be clipped in save_rgba_image().
-            im_sum += stroke != 0
-        im_sum[im_sum == 0] = 1
-        im_r /= im_sum
-        im_g /= im_sum
-        im_b /= im_sum
+            stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+            stroke_im_r = stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+            stroke_im_g = stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+            stroke_im_b = stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+            im_r = Colourizer.composite_rgb(stroke_im_r, im_r, stroke_alpha_im)
+            im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
+            im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
+            im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+            # Original.
+            # im_r += stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+            # im_g += stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+            # im_b += stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+            # alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+            # im_a += alpha_im  # Doesn't need averaging. Will be clipped in save_rgba_image().
+            # im_sum += stroke != 0
+        # im_sum[im_sum == 0] = 1
+        # im_r /= im_sum
+        # im_g /= im_sum
+        # im_b /= im_sum
+        # End of original.
         # im_r /= curves_num
         # im_g /= curves_num
         # im_b /= curves_num

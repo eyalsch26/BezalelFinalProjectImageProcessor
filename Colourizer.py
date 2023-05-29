@@ -43,7 +43,7 @@ def rgb_to_gray(image_frame):
 
 def alpha_channel(im_y, alpha='n', c=1, k=3):
     """
-    Generate an alpha channel according to the method indicated for the final image.
+    Generates an alpha channel according to the method indicated for the final image.
     :param im_y: A numpy array with dtype np.float64 in range [0,1]. The y channel of the image.
     :param alpha: A string which represents the method to generate the alpha channel according to. The following are
     possible variables:
@@ -99,6 +99,20 @@ def colour_stroke(stroke, r, g, b, mode='original'):
     b_stroke = stroke[::, ::, 2::] * b * c
     coloured_stroke = np.dstack((r_stroke, g_stroke, b_stroke))
     return coloured_stroke
+
+
+def composite_rgb(channel_im_a, channel_im_b, alpha_im_a):
+    channel_out = channel_im_a + channel_im_b * (1 - alpha_im_a)
+    return channel_out
+
+
+def composite_alpha(a_alpha, b_alpha):
+    alpha_out = a_alpha + b_alpha * (1 - a_alpha)
+    return alpha_out
+
+
+# def composite_images(a_r, a_g, a_b, a_a, b_r, b_g, b_b, b_a):
+#     composite_im =
 
 
 def watercolour_stroke_alpha(im, org, min_opc=0.25, type='linear'):

@@ -15,14 +15,15 @@ import Tests
 
 if __name__ == '__main__':
     # Windows
-    FileManager.vectorize_contour_to_file('', os='w')
+    # FileManager.vectorize_contour_to_file('', os='w')
     # FileManager.raster_contour_from_file('', os='w')
     # Mac
     # FileManager.vectorize_contour_to_file(
-    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles'
-    #     '/ParametersFileVectorization_FormPOC.txt', os='m')
-    # FileManager.raster_contour_from_file(
-    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/ParametersFileRasterization_FormPOC.txt', os='m')
+    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/POC'
+    #     '/ParametersFileVectorization_JellyfishPOC.txt', os='m')
+    FileManager.raster_contour_from_file(
+        '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles'
+        '/POC/ParametersFileRasterization_JellyfishPOC.txt', os='m')
 
     # Tests.trace_edge_from_corner_basic_check()
     # Tests.save_rgba_check()

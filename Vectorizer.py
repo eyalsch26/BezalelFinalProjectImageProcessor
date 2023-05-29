@@ -381,9 +381,12 @@ def find_neighbours(edges_im, pxl):
     :return: A numpy array with dtype np.float64 and shape (1, x, 2) where 0<x<8 is the number of neighbours.
     """
     # Checking bounds.
-    row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
+    # row_s, row_e, column_s, column_e = neighborhood_bounds(pxl, edges_im.shape)
     # Calculating the neighborhood of the current pixel considering the boundaries of the image.
-    neighborhood = np.copy(edges_im[row_s:row_e, column_s:column_e])
+    # neighborhood = np.copy(edges_im[row_s:row_e, column_s:column_e])
+    padded_edges_im = np.zeros((edges_im.shape[0] + 2, edges_im.shape[1] + 2))
+    padded_edges_im[1:edges_im.shape[0] + 1, 1:edges_im.shape[1] + 1] = edges_im
+    neighborhood = np.copy(padded_edges_im[pxl[0]:pxl[0] + 3, pxl[1]:pxl[1] + 3])
     # Deleting the origin pixel (a pixel is not a neighbour of itself).
     neighborhood[1][1] = 0
     # Finding the indices of the neighbors pixels which has value of 1.
@@ -766,6 +769,20 @@ def collapse_curves(bzr_ctrl_pts_arr, r_f):
     r_bzr_ctrl_pts_vecs = r_f * (center - r_bzr_ctrl_pts)
     n_bzr_ctrl_pts = r_bzr_ctrl_pts + r_bzr_ctrl_pts_vecs
     return n_bzr_ctrl_pts
+
+
+def converge_crv_to_crv(bcp_0, bcp_1, factor):
+    vecs = bcp_1 - bcp_0
+    new_bcp = bcp_0 + factor * vecs
+    return new_bcp
+
+
+def match_crvs(bcp_arr_0, bcp_arr_1):
+    pass
+
+
+def converge_crvs_to_crvs(bcp_arr_0, bcp_arr_1, frames_num):
+    pass
 
 
 # ------------------------------------------------ Vector Generation ---------------------------------------------------
