@@ -165,9 +165,10 @@ def vectorize_contour_to_file(parameters_path, os='w'):
 # Rasterization
 def raster_contour_from_file(parameters_path, os='w'):
     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
-    canvas_output_y, contiguous, diminish, diminish_min_l_r, displace, displace_min, displace_max, \
-    displace_transform_max, distort, distort_min, distort_max, strk_w_min, strk_w_max, texture_style, texture_type, \
-    colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, alpha_f = import_parameters(parameters_path)
+    canvas_output_y, contiguous, diminish, diminish_min_l_r, dsp_dst_direction, dsp_dst_style, displace, \
+    displace_min, displace_max, displace_transform_max, distort, distort_min, distort_max, strk_w_min, strk_w_max, \
+    texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, \
+    alpha_f = import_parameters(parameters_path)
     cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
     canvas_scaler = canvas_output_x / canvas_input_x
     # Iterating over the desired images.
@@ -191,19 +192,19 @@ def raster_contour_from_file(parameters_path, os='w'):
             continue
         bcp_arr *= canvas_scaler
         # Applying vector manipulation.
-        idx_factor = (im_file_idx - start) / (end - start) if end > start else 1
-        if diminish:
+        idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
+        if diminish == 'True':
             bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
-        if displace:
+        if displace == 'True':
             dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
             dsp_t = int(idx_factor * displace_transform_max)
             bcp_arr = Vectorizer.displace_bezier_curves(bcp_arr, dsp_f, dsp_t)
-        if distort:
+        if distort == 'True':
             dst_f = int(distort_min + idx_factor * (distort_max - distort_min))
             bcp_arr = Vectorizer.distort_bezier_curves(bcp_arr, dst_f)
         # Rastering the curves.
         curves_num = len(bcp_arr)
-        txr_arr = Rasterizer.generate_textures_arr(curves_num, texture_style)  # Defining texture.
+        txr_arr = Rasterizer.generate_textures_arr(curves_num, texture_style, texture_type)  # Defining texture.
         rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
         clr_arr = Colourizer.generate_colours_arr(curves_num, colour_style, rgb_range)  # Defining colour.
         for crv_idx in range(curves_num):
@@ -222,21 +223,6 @@ def raster_contour_from_file(parameters_path, os='w'):
             im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
             im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
             im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
-            # Original.
-            # im_r += stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
-            # im_g += stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
-            # im_b += stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
-            # alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
-            # im_a += alpha_im  # Doesn't need averaging. Will be clipped in save_rgba_image().
-            # im_sum += stroke != 0
-        # im_sum[im_sum == 0] = 1
-        # im_r /= im_sum
-        # im_g /= im_sum
-        # im_b /= im_sum
-        # End of original.
-        # im_r /= curves_num
-        # im_g /= curves_num
-        # im_b /= curves_num
         im_rgb = np.dstack((im_r, im_g, im_b))
         save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
 

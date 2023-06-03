@@ -771,6 +771,19 @@ def collapse_curves(bzr_ctrl_pts_arr, r_f):
     return n_bzr_ctrl_pts
 
 
+def index_displace_distort_factor(idx, start, end, direction, method='linear'):
+    idx_factor = (idx - start) / (end - start) if end > start else 1
+    if method == 'root':
+        idx_factor = np.sqrt(idx_factor)
+    elif method == 'log':
+        idx_factor = np.log2(idx_factor + 1)
+    elif method == 'square':
+        idx_factor *= idx_factor
+    if direction == 'reverse':
+        idx_factor = 1 - idx_factor
+    return idx_factor
+
+
 def converge_crv_to_crv(bcp_0, bcp_1, factor):
     vecs = bcp_1 - bcp_0
     new_bcp = bcp_0 + factor * vecs

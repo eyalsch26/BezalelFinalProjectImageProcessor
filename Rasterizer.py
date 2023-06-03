@@ -11,7 +11,7 @@ BZ_CTRL_PTS = 4
 DIMS = 2
 MIN_OPACITY = 0.2
 TXR_NUM = 13  # 0: random. 1: solid. 2: chalk. 3: charcoal. 4: watercolour. 5: oil_dry. 6: oil_wet. 7: pen. 8: pencil.
-# 9: perlin_noise. 10: splash. 11: spark. 12: radius_division. 13: Bubble.
+# 9: perlin_noise. 10: splash. 11: spark. 12: radius_division. 13: bubble. 14: fur. 15: cloth.
 
 
 def curve_partitions(bezier_control_points):
@@ -91,11 +91,34 @@ def bezier_curve_points(bezier_control_points):
     return pixels
 
 
+def curve_points_min_max(bcp):
+    """
+    Finds the minimum and maximum row and column coordinates of the bezier control points array given.
+    :param bcp: A numpy array with shape (4, 2) represents the Bezier control points and dtype np.float64.
+    :return: An array with dtype np.float64 and shape (1, 4) which represents the row min, row max, column min and
+    column max.
+    """
+    bcp_t = bcp.T
+    x_min = np.min(bcp_t, axis=1)[0]
+    x_max = np.max(bcp_t, axis=1)[0]
+    y_min = np.min(bcp_t, axis=1)[1]
+    y_max = np.max(bcp_t, axis=1)[1]
+    return np.uint16([x_min, x_max, y_min, y_max])
+
+
+def stroke_shape(bcp, strk_max_radius):
+    x_min, x_max, y_min, y_max = curve_points_min_max(bcp)
+    row_e = x_max - x_min + 2 * strk_max_radius + 1
+    column_e = y_max - y_min + 2 * strk_max_radius + 1
+    shape = tuple((int(row_e), int(column_e)))
+    return shape
+
+
 def generate_textures_arr(l, generation_method, uniform_txr=1, given_txr_arr=(0, 1)):
     if generation_method == 'random':
         txr_arr = np.arange(l) % TXR_NUM
         return txr_arr
-    elif generation_method == 'uniformed':
+    elif generation_method == 'uniform':
         txr_arr = np.ones(l) * uniform_txr
         return txr_arr
     elif generation_method == 'from_arr':
@@ -146,9 +169,9 @@ def apply_chalk_texture(p, grad, r, stroke):
     return stroke * f
 
 
-def apply_cloth_texture(p, grad, r, stroke):
-    x = np.ones((r, r))
-    y = np.ones((r, r))
+def apply_cloth_texture(stroke):
+    x = np.ones(stroke.shape)
+    y = np.ones(stroke.shape)
     x[::4] = 0
     y[::2] = 0
     txr = Vectorizer.blur_image(x * y.T * apply_random_texture(stroke), 3)
@@ -164,6 +187,15 @@ def add_texture(p, stroke, texture=1):
     # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
     if texture == 0:  # 'random'
         return apply_random_texture(stroke)
+    return stroke  # 'solid'
+
+
+def add_texture1(stroke, texture=1):
+    # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
+    if texture == 0:  # 'random'
+        return apply_random_texture(stroke)
+    elif texture == 15:  # 'cloth'
+        return apply_cloth_texture(stroke)
     return stroke  # 'solid'
 
 
@@ -208,6 +240,16 @@ def pixel_stroke(p, r, blur_kernel=3, texture=1, opacity=1):
     return stroke
 
 
+def pixel_stroke1(p, r, blur_kernel=3, opacity=1):
+    # Creating basic stroke shape.
+    stroke = draw_circle(r)
+    # Adding blur.
+    stroke = scipy.signal.convolve2d(stroke, Vectorizer.gaussian_kernel(blur_kernel), mode='same')
+    # Applying opacity + considering interpolation.
+    stroke *= (opacity * (1 - np.linalg.norm(p - np.round(p))))
+    return stroke
+
+
 def stroke_rasterizer(bezier_control_points, radius_min=1, radius_max=5, radius_style='log', shape='circle',
                       texture=1, blur_kernel=3, strength_style='log', canvas_shape=(1080, 1920)):
     # Preparing the image base.
@@ -232,6 +274,42 @@ def stroke_rasterizer(bezier_control_points, radius_min=1, radius_max=5, radius_
         new_p_y = np.uint16(p[1]) + original_zero_y
         big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
     canvas = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
+    canvas = np.clip(canvas, 0, 1)
+    return canvas
+
+
+def stroke_rasterizer1(bcp, radius_min=1, radius_max=5, radius_style='log', shape='circle', texture=1, blur_kernel=3,
+                      strength_style='log', canvas_shape=(1080, 1920)):
+    # Preparing the image base.
+    big_canvas_shape = tuple((int(canvas_shape[0] + 2 * radius_max + 1), int(canvas_shape[1] + 2 * radius_max + 1)))
+    canvas = np.zeros(big_canvas_shape)
+    # Computing the pixels of the curve.
+    bzr_pts = bezier_curve_points(bcp)
+    # Generating a stroke canvas.
+    x_min, x_max, y_min, y_max = curve_points_min_max(bcp)
+    strk_shape = stroke_shape(bcp, radius_max)
+    stroke_canvas = np.zeros(strk_shape)
+    n = len(bzr_pts)
+    # Computing each pixel stroke.
+    for i in range(n):
+        p = bzr_pts[i]
+        r = stroke_radius(radius_min, radius_max, radius_style, n, i)
+        s = stroke_strength(strength_style, n, i)
+        pxl_strk = pixel_stroke(p, r, blur_kernel, s)
+        # Placing the stroke on the canvas.
+        p_x_e = int(p[0] - x_min + radius_max + np.ceil(pxl_strk.shape[0]/2))
+        p_x_s = p_x_e - pxl_strk.shape[0]
+        p_y_e = int(p[1] - y_min + radius_max + np.ceil(pxl_strk.shape[1]/2))
+        p_y_s = p_y_e - pxl_strk.shape[1]
+        stroke_canvas[p_x_s:p_x_e, p_y_s:p_y_e] += pxl_strk  # r includes the center so no +1 needed at the end.
+        # Adding texture.
+    stroke_canvas = add_texture(stroke_canvas, texture)
+    row_s = int(x_min)
+    row_e = int(x_max + 2 * radius_max + 1)
+    column_s = int(y_min)
+    column_e = int(y_max + 2 * radius_max + 1)
+    canvas[row_s:row_e, column_s:column_e] = stroke_canvas
+    canvas = canvas[int(radius_max):int(-radius_max) - 1, int(radius_max):int(-radius_max) - 1]
     canvas = np.clip(canvas, 0, 1)
     return canvas
 
@@ -263,7 +341,7 @@ def strokes_rasterizer(bezier_control_points_arr, radius_min=1, radius_max=5, ra
     im /= np.max(im)  # For visualization only - indicates how many times a pixel has been coloured. Make sure no clip.
     return np.clip(np.log2(im + 1), 0, 1)  # Original.
 
-
+# Works.
 def diminish_bcps_num(bezier_control_points_arr, min_l_r=0.5):
     l_arr = list(map(curve_partitions, bezier_control_points_arr))
     l_arr_max = np.max(l_arr)
