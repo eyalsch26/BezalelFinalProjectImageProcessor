@@ -10,6 +10,7 @@ import EdgeDetector
 import Vectorizer
 import Colourizer
 import Rasterizer
+import Renderer
 import Tests
 
 
@@ -18,12 +19,13 @@ if __name__ == '__main__':
     # FileManager.vectorize_contour_to_file('', os='w')
     # FileManager.raster_contour_from_file('', os='w')
     # Mac
-    # FileManager.vectorize_contour_to_file(
-        # '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/POC'
-        # '/ParametersFileVectorization_LinearFormPOC.txt', os='m')
-    FileManager.raster_contour_from_file(
-        '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles'
-        '/POC/ParametersFileRasterization_LinearFormPOC1.txt', os='m')
+    Renderer.render_cubist(False, False, True)
+    # FileManager.raster_contour_from_file(
+    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Jellyfish'
+    #     '/Rasterization_Jellyfish_3.txt', os='m')
+    # FileManager.volume_colourizer(
+    #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Jellyfish'
+    #     '/Colourization_Jellyfish_2.txt', os='m')
 
     # Tests.trace_edge_from_corner_basic_check()
     # Tests.save_rgba_check()
