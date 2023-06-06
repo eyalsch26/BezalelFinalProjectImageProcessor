@@ -114,6 +114,7 @@ def stroke_shape(bcp, strk_max_radius):
     return shape
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Textures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def generate_textures_arr(l, generation_method, uniform_txr=1, given_txr_arr=(0, 1)):
     if generation_method == 'random':
         txr_arr = np.arange(l) % TXR_NUM
@@ -183,6 +184,10 @@ def apply_filament_texture(k, stroke):  # TODO: Not working.
     return res_stroke
 
 
+def sin_texture(im, org):
+    pass
+
+
 def add_texture(p, stroke, texture=1):
     # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
     if texture == 0:  # 'random'
@@ -199,6 +204,7 @@ def add_texture1(stroke, texture=1):
     return stroke  # 'solid'
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stroke ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def stroke_radius(radius_min, radius_max, width_style, n, i):
     # radius_style: log, root, linear, uniform.
     d = i
