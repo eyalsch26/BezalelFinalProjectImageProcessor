@@ -129,6 +129,17 @@ def render_Jellyfish(parameters_path):
         '/Colourization_Jellyfish_2.txt', os='m')
 
 
+# ---------------------------------------------------- Content ---------------------------------------------------------
+def render_content(parameters_path):
+    vectorize, rasterize, colourize, vectorize_path, rasterize_path, colourize_path = FileManager.import_parameters(
+        parameters_path)
+    if vectorize == 'True':
+        vectorize_contour_to_file(vectorize_path, os='m')
+    if rasterize == 'True':
+        raster_contour_from_file(rasterize_path, os='m')
+    if colourize == 'True':
+        volume_colourizer(colourize_path, os='m')
+    return
 
 # ----------------------------------------------------- Cubist ---------------------------------------------------------
 def render_cubist(vectorize, rasterize, colourize):
