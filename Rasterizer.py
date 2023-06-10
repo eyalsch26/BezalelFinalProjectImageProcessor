@@ -184,8 +184,44 @@ def apply_filament_texture(k, stroke):  # TODO: Not working.
     return res_stroke
 
 
-def sin_texture(im, org):
-    pass
+def sin_texture_x(im_shape, org, wave_len_r=1):
+    x = np.linspace(-org[0], im_shape[0] - org[0])
+    y = np.linspace(-org[1], im_shape[1] - org[1])
+    xx, yy = np.meshgrid(x, y)
+    xx /= im_shape[0] - org[0]
+    xx *= wave_len_r
+    sin_im_x = np.sin(xx)
+    return sin_im_x
+
+
+def sin_texture_y(im_shape, org, wave_len_r=1):
+    x = np.linspace(-org[0], im_shape[0] - org[0])
+    y = np.linspace(-org[1], im_shape[1] - org[1])
+    xx, yy = np.meshgrid(x, y)
+    yy /= im_shape[1] - org[1]
+    yy *= wave_len_r
+    sin_im_y = np.sin(yy)
+    return sin_im_y
+
+
+def sin_texture(im_shape, org, wave_len_r=1):
+    x = np.linspace(-org[0], im_shape[0] - org[0])
+    y = np.linspace(-org[1], im_shape[1] - org[1])
+    xx, yy = np.meshgrid(x, y)
+    xx /= im_shape[0] - org[0]
+    yy /= im_shape[1] - org[1]
+    xx *= wave_len_r
+    yy *= wave_len_r
+    x_sin = np.sin(xx)
+    y_sin = np.sin(yy)
+    sin_im = np.dstack((x_sin, y_sin))
+    return sin_im
+
+
+def horizontal_lines_texture(im_shape, line_width, space_width):
+    lines_im = np.zeros(im_shape)
+    line = np.ones((line_width, im_shape[1]))
+    return lines_im
 
 
 def add_texture(p, stroke, texture=1):
