@@ -32,7 +32,7 @@ def curve_partitions(bezier_control_points):
     arithmetic_mat = np.eye(BZ_CTRL_PTS, BZ_DEG) - np.eye(BZ_CTRL_PTS, BZ_DEG, -1)  # TODO: Check for more pythonic way to make more efficient.
     dist_mat = np.abs(bezier_control_points.T @ arithmetic_mat)
     n = np.sum(np.sqrt(np.sum(np.square(dist_mat), axis=1)))
-    return n
+    return n if n > 0 else 1
 
 
 def t_sparse_vec(t_orig):
@@ -134,6 +134,8 @@ def generate_textures_arr(l, generation_method, uniform_txr=1, given_txr_arr=(0,
 
 
 def draw_circle(r):
+    if r < 1:
+        r = 1
     r_r = math.floor(r)
     x = np.linspace(-r_r, r_r, 2 * r_r + 1)
     y = np.linspace(-r_r, r_r, 2 * r_r + 1)
@@ -218,10 +220,39 @@ def sin_texture(im_shape, org, wave_len_r=1):
     return sin_im
 
 
-def horizontal_lines_texture(im_shape, line_width, space_width):
-    lines_im = np.zeros(im_shape)
-    line = np.ones((line_width, im_shape[1]))
-    return lines_im
+def stripes_texture(im_shape, stripe_width, space_width, direction='horizontal', style='uniform'):
+    stripes_im = np.zeros(im_shape)
+    r = im_shape[0] // (stripe_width + space_width)
+    if direction == 'vertical':
+        stripes_im = stripes_im.T
+        r = im_shape[1] // (stripe_width + space_width)
+    width_addition_arr = np.arange(stripe_width)
+    cur_width_add = 0
+    start = 0
+    end = stripe_width
+    for i in range(r):
+        if style == 'scale':
+            cur_width_add = width_addition_arr[i]
+            end += cur_width_add
+        elif style == 'random':
+            cur_width_add = width_addition_arr[np.random.randint(0, stripe_width)]
+            end += cur_width_add
+        stripes_im[start:end:] = 1
+        start = np.clip(end + space_width, 0, stripes_im.shape[0] - 1)  # i * (stripe_width + cur_width_add + space_width)
+        end = np.clip(start + stripe_width + cur_width_add, 0, stripes_im.shape[0] - 1)  # i * (stripe_width + space_width) + stripe_width
+    if direction == 'vertical':
+        stripes_im = stripes_im.T
+    return stripes_im
+
+
+def roll_texture_image(image, roll_iter, direction='horizontal'):
+    axis = 0 if direction == 'horizontal' else 1
+    im = np.roll(image, roll_iter, axis)
+    return im
+
+
+def volume_spread(im_shape, org):
+    pass
 
 
 def add_texture(p, stroke, texture=1):

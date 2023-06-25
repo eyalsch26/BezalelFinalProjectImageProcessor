@@ -19,7 +19,8 @@ if __name__ == '__main__':
     # FileManager.vectorize_contour_to_file('', os='w')
     # FileManager.raster_contour_from_file('', os='w')
     # Mac
-    Renderer.render_cubist(False, False, True)
+    Renderer.render_content_setup()
+    # Renderer.render_cubist(False, False, True)
     # FileManager.raster_contour_from_file(
     #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Jellyfish'
     #     '/Rasterization_Jellyfish_3.txt', os='m')

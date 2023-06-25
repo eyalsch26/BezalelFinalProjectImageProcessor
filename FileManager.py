@@ -20,6 +20,9 @@ FRAMES_DIR_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Lif
 VEC_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector'
 RAST_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Raster'
 CLR_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Colour'
+RND_TXT_HEAD = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Text/Headline' \
+               '/ParametersFiles_Text_Headline.txt'
+RND_CNT_SETUP = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Setup/ParametersFiles_Content_Setup.txt'
 
 # Constants
 FPS = 24
@@ -42,10 +45,14 @@ def import_parameters(path):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Importing & Saving Images ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def file_path(dir_path, file_name, num, ext='png', os='w'):
+def file_path(dir_path, file_name, num, ext='png', os='w', txt=False):
     f_path = f'{dir_path}\\{file_name}.{num}.{ext}'  # Windows.
+    if txt:
+        f_path = f'{dir_path}\\{file_name}.{ext}'  # Windows.
     if os == 'm':  # Mac.
         f_path = f'{dir_path}/{file_name}.{num}.{ext}'
+        if txt:
+            f_path = f'{dir_path}/{file_name}.{ext}'
     return f_path
 
 

@@ -241,7 +241,7 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     t1_co will be removed from the final image and will not represent an edge.
     :param t2_co: A floating point number representing the high pass filter so that pixels with values higher than
     t2_co will be removed from the final image and will not represent an edge.
-    :return: A numpy array with shape im.shape and with dtype np.float64. In this image only the edges remaind.
+    :return: A numpy array with shape im.shape and with dtype np.float64. In this image only the edges remained.
     """
     # Computing Laplacian/Sobel on the image.
     # s = sobel_gradient(im)  # Works yet not as good as just laplacian - thick lines.
@@ -743,6 +743,37 @@ def distort_bezier_curves(bezier_control_points_arr, factor=2):
     new_bzr_ctrl_pts_arr = np.empty((0, 4, 2), dtype=np.float64)
     for bzr_ctrl_pts in bezier_control_points_arr:
         new_bzr_ctrl_pts = distort_bezier_control_points(bzr_ctrl_pts, factor)
+        new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
+    return new_bzr_ctrl_pts_arr
+
+
+def scale_bezier_curve(bzr_ctrl_pts, s_f):
+    # Setting local variables.
+    p_0 = bzr_ctrl_pts[0]
+    p_1 = bzr_ctrl_pts[1]
+    p_2 = bzr_ctrl_pts[2]
+    p_3 = bzr_ctrl_pts[3]
+    center = (p_0 + p_1 + p_2 + p_3) / 4
+    # Calculating the new control points.
+    p_0_new = p_0 + s_f * (center - p_0)
+    p_1_new = p_1 + s_f * (center - p_1)
+    p_2_new = p_2 + s_f * (center - p_2)
+    p_3_new = p_3 + s_f * (center - p_3)
+    # if np.linalg.norm(p_0_new - center) > 0 and np.linalg.norm(p_0_new - center) < 1:
+    #     p_0_new += (p_0_new - center) / np.linalg.norm(p_0_new - center)
+    # if np.linalg.norm(p_1_new - center) > 0 and np.linalg.norm(p_1_new - center) < 1:
+    #     p_1_new += (p_1_new - center) / np.linalg.norm(p_1_new - center)
+    # if np.linalg.norm(p_2_new - center) > 0 and np.linalg.norm(p_2_new - center) < 1:
+    #     p_2_new += (p_2_new - center) / np.linalg.norm(p_2_new - center)
+    # if np.linalg.norm(p_3_new - center) > 0 and np.linalg.norm(p_3_new - center) < 1:
+    #     p_3_new += (p_3_new - center) / np.linalg.norm(p_3_new - center)
+    return np.array([p_0_new, p_1_new, p_2_new, p_3_new])
+
+
+def scale_bezier_curves(bzr_ctrl_pts_arr, s_f):
+    new_bzr_ctrl_pts_arr = np.empty((0, 4, 2), dtype=np.float64)
+    for bzr_ctrl_pts in bzr_ctrl_pts_arr:
+        new_bzr_ctrl_pts = scale_bezier_curve(bzr_ctrl_pts, s_f)
         new_bzr_ctrl_pts_arr = np.append(new_bzr_ctrl_pts_arr, [new_bzr_ctrl_pts], axis=0)  # Original.
     return new_bzr_ctrl_pts_arr
 

@@ -52,7 +52,7 @@ def alpha_channel(im_y, alpha='n', c=1, k=3):
     y (y channel) - an image which is a duplicate of the y channel.
     c (constant) - an image where all its values are equal to the c given as an argument.
     r (random) - an image where all its values are random floats in the range [0, 1].
-    :param c: A float. A constant to multiply the alpha channel by (if given).
+    :param c: A float in the range [0, 1]. A constant to multiply the alpha channel by (if given).
     :param k: An integer. A gaussian kernel to blur the binary alpha channel by (if given).
     :return: A numpy array with shape equal to the im_y shape and dtype np.float64 in range [0,1].
     """
@@ -63,9 +63,9 @@ def alpha_channel(im_y, alpha='n', c=1, k=3):
     elif alpha == 'y':  # Y for y channel (yiq format).
         return im_y
     elif alpha == 'c':  # C for constant coefficient.
-        return c * (im_y != 0)
+        return np.clip(c, 0, 1) * im_y
     elif alpha == 'r':
-        return (im_y != 0) * c * np.random.randint(0, 255, im_y.shape) / 255
+        return (im_y != 0) * np.clip(c, 0, 1) * np.random.randint(0, 255, im_y.shape) / 255
     return np.ones(im_y.shape)
 
 
