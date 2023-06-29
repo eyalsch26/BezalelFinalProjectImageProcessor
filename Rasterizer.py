@@ -4,6 +4,8 @@ import scipy
 from scipy import signal
 from scipy import sparse
 import Vectorizer
+import FileManager
+import Colourizer
 
 
 BZ_DEG = 3
@@ -422,6 +424,96 @@ def diminish_bcps_num(bezier_control_points_arr, min_l_r=0.5):
     idx_arr = np.argwhere(l_arr >= l_max).flatten()
     diminished_bcps = bezier_control_points_arr[idx_arr]
     return diminished_bcps
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def content_rasterizer(im, cnvs_shape, canvas_scaler, radius_min, blur_kernel, texture, r_min, r_max,
+                       g_min, g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f):
+    # Preparing the image.
+    canvas_output_x, canvas_output_y = cnvs_shape
+    im_r = np.zeros(cnvs_shape)
+    im_g = np.zeros(cnvs_shape)
+    im_b = np.zeros(cnvs_shape)
+    im_a = np.zeros(cnvs_shape)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    alpha_im = Colourizer.alpha_input_image(im)
+    im_y_alpha = im_y * alpha_im
+    # Preparing the image base.
+    original_zero_x = np.uint16(0.5 * cnvs_shape[0])
+    original_zero_y = np.uint16(0.5 * cnvs_shape[1])
+    original_end_x = 3 * original_zero_x
+    original_end_y = 3 * original_zero_y
+    # Computing the pixels of the curve.
+    pxl_arr = np.argwhere(im_y_alpha != 0) * canvas_scaler
+    pxl_num = len(pxl_arr)
+    coof = 1 - (pxl_num / (cnvs_shape[0] * cnvs_shape[1]))
+    content_radius = np.sqrt(0.5 * pxl_num / np.pi)
+    diminish_step = int(0.5 * content_radius + 0.01 * pxl_num)
+    pxl_idx_arr = np.random.randint(0, diminish_step, pxl_num)
+    pxl_pts = pxl_arr[np.argwhere(pxl_idx_arr == 0)]
+    center = 0.5 * (np.min(pxl_pts, axis=0) + np.max(pxl_pts, axis=0))
+    radius_coof = 0.25 * coof
+    center_vecs = center - pxl_pts
+    norms_arr = np.linalg.norm(center_vecs, axis=1)
+    radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
+    n = len(pxl_pts)
+    rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
+    clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range)  # Defining colour.
+    # Computing each pixel stroke.
+    for i in range(n):
+        big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
+        p = pxl_pts[i]
+        r = radius_arr[i]
+        s = r / np.max(radius_arr)
+        cur_clr = clr_arr[i]
+        stroke = pixel_stroke(p, r, blur_kernel, texture, s)
+        # Placing the stroke on the canvas.
+        r_s = stroke.shape[0] // 2
+        new_p_x = np.uint16(p[0]) + original_zero_x
+        new_p_y = np.uint16(p[1]) + original_zero_y
+        big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
+        stroke = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
+        stroke = np.clip(stroke, 0, 1)
+        stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
+                                                                    Colourizer.CLR_DIM))
+        stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
+        stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+        stroke_im_r = stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+        stroke_im_g = stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+        stroke_im_b = stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+        im_r = Colourizer.composite_rgb(stroke_im_r, im_r, stroke_alpha_im)
+        im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
+        im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
+        im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+    im_rgb = np.dstack((im_r, im_g, im_b))
+    return im_rgb, im_a
+
+
+
+def content_rasterizer0(im, idx=24, min_pts_num=80, diminish_pts_f=20):
+    relative_idx = (idx % FileManager.FPS) / FileManager.FPS
+    # Contour.
+    contour = Vectorizer.detect_edges(im)
+    contour_cof = np.argwhere(contour != 0)
+    contour_pxl_num = len(contour_cof)
+    initial_contour_pxl_num = contour_pxl_num
+    contour_cof = np.roll(contour_cof, int(np.floor(relative_idx * contour_pxl_num)), axis=0)
+    if contour_pxl_num > min_pts_num:
+        contour_cof = contour_cof[::diminish_pts_f]
+        contour_pxl_num = len(contour_cof)
+    pts_num = contour_pxl_num + 4 - contour_pxl_num % 4
+    bzr_crv_num = pts_num // 4
+    bcp = np.repeat([contour_cof], 2, axis=0).reshape((2 * contour_pxl_num, 2))[:pts_num].reshape(bzr_crv_num, 4, 2)
+
+    # rst_im = strokes_rasterizer(bcp)
+    # # Center of mass.
+    # center = np.average(contour_cof, axis=0)  # Point to collapse to.
+    # # Vectors to center.
+    # vecs_to_center = contour_cof - center
+    # vecs_norm = np.linalg.norm(vecs_to_center, axis=1)
+    # radius_arr = 0.5 * vecs_norm
+    return bcp, bzr_crv_num, initial_contour_pxl_num
 
 
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------

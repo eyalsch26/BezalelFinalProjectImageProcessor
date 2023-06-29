@@ -41,6 +41,13 @@ def rgb_to_gray(image_frame):
     return np.dot(image_frame[..., :3], [0.2989, 0.5870, 0.1140])
 
 
+def alpha_input_image(im):
+    if len(im.shape) == 3:
+        alpha_im = im[..., -1]
+        return alpha_im
+    return np.ones(im.shape)
+
+
 def alpha_channel(im_y, alpha='n', c=1, k=3):
     """
     Generates an alpha channel according to the method indicated for the final image.
@@ -70,6 +77,18 @@ def alpha_channel(im_y, alpha='n', c=1, k=3):
 
 
 def generate_colours_arr(l, generation_method, rgb_range):
+    if generation_method == 'random':
+        clr_arr = (np.random.randint(0, 256, 3 * l) / 255).reshape((l, 3))
+        return clr_arr
+    elif generation_method == 'range':
+        r = np.random.randint(rgb_range[0][0], rgb_range[0][1] + 1, l) / 255
+        g = np.random.randint(rgb_range[1][0], rgb_range[1][1] + 1, l) / 255
+        b = np.random.randint(rgb_range[2][0], rgb_range[2][1] + 1, l) / 255
+        clr_arr = np.dstack((r, g, b)).reshape(l, 3)
+        return clr_arr
+
+
+def generate_content_colours_arr(l, generation_method, rgb_range):
     if generation_method == 'random':
         clr_arr = (np.random.randint(0, 256, 3 * l) / 255).reshape((l, 3))
         return clr_arr

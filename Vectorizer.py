@@ -202,6 +202,15 @@ def remove_isolated_pixels(im):
     return im_result
 
 
+def remove_border_pixels(im):
+    im_result = im
+    im_result[::, :1:] = 0
+    im_result[::, -1::] = 0
+    im_result[:1:, ::] = 0
+    im_result[-1::, ::] = 0
+    return im_result
+
+
 def thin_edges(im):
     """
     Diminishes the edges to a width of one pixel. Only one iteration is applied so some leftovers might be remained.
@@ -227,9 +236,39 @@ def clean_undesired_pixels(im):
     :param im: A numpy array with dtype np.float64.
     :return: A numpy array with shape im.shape and with dtype np.float64.
     """
-    clean_im = thin_edges(im)
-    cleaner_im = remove_isolated_pixels(clean_im)
-    return cleaner_im
+    clean_im = remove_border_pixels(im)
+    cleaner_im = thin_edges(clean_im)
+    cleanest_im = remove_isolated_pixels(cleaner_im)
+    return cleanest_im
+
+
+def detect_edges_new(im, t1_co=1.25, t2_co=0.6):
+    """
+    Finds the edges in the image based on the canny detection algorithm. The low filter is set to 0.975 and the high
+    filter is set to 0.995 as default.
+    :param im: A numpy array with dtype np.float64.
+    :param t1_co: A floating point number representing the low pass filter so that pixels with values lower than
+    t1_co will be removed from the final image and will not represent an edge.
+    :param t2_co: A floating point number representing the high pass filter so that pixels with values higher than
+    t2_co will be removed from the final image and will not represent an edge.
+    :return: A numpy array with shape im.shape and with dtype np.float64. In this image only the edges remained.
+    """
+    # Computing Laplacian/Sobel on the image.
+    # s = sobel_gradient(im)  # Works yet not as good as just laplacian - thick lines.
+    # lap_im = sobel_gradient(s[0])[0] + sobel_gradient(s[1])[1]
+    lap_im = laplacian_image(im)  # For images from reality use: blur_image(im, 15)
+    lap_im -= np.min(lap_im)  # Clipping to [0, 1].
+    lap_im /= np.max(lap_im)  # Normalizing.
+    # Computing thresholds.
+    t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))
+    t2 = t2_co * t1
+    # Result according to the thresholds.
+    edges_im = np.zeros(im.shape)
+    edges_im[lap_im <= t2] = 1
+    # edges_im[lap_im >= t1] = 1
+    # Remove isolated pixels and spikes pixels.
+    edges_im = clean_undesired_pixels(edges_im)
+    return edges_im
 
 
 def detect_edges(im, t1_co=0.975, t2_co=0.995):
@@ -662,6 +701,27 @@ def vectorize_image(im, min_crv_ratio=16):
     # return p * (corners_im + edges_im)  # For showreel
 
 
+# Not in use. Content is rasterized directly.
+def vectorize_content_image(im, min_crv_ratio=16, layers=4, diminish_curves=False):
+    edges_im = detect_edges_new(im)
+    corners_im = detect_corners(edges_im)
+    if np.max(corners_im) == 0:  # If no corners where found pick four random edge pixels.
+        edge_crd = np.argwhere(edges_im != 0)
+        edge_length = len(edge_crd)
+        edge_step = int(edge_length // 4)
+        corners_crd = edge_crd[::edge_step]
+        corners_im[corners_crd.T[0], corners_crd.T[1]] = 1
+    # min_path_len = im.shape[0] // min_crv_ratio
+    min_path_len = 0.25 * len(np.argwhere(edges_im != 0)) / np.pi
+    bzr_ctrl_pts_dict, connectivity_arr = trace_edges_to_bezier(edges_im, corners_im, min_path_len)
+    bzr_ctrl_pts_arr = np.array([bzr_ctrl_pts_dict[i] for i in range(len(bzr_ctrl_pts_dict))])
+    for i in range(1, layers):
+        reduce_factor = i / layers  # The reduce_factor must be > 0.
+        collapsed_bcp = collapse_content_curves(bzr_ctrl_pts_arr, reduce_factor, diminish_curves)
+        bzr_ctrl_pts_arr = np.vstack((bzr_ctrl_pts_arr, collapsed_bcp))
+    return bzr_ctrl_pts_arr
+
+
 # ----------------------------------------------- Vector Manipulation --------------------------------------------------
 
 def perpendicular_vec(vec, norm='same'):
@@ -778,7 +838,7 @@ def scale_bezier_curves(bzr_ctrl_pts_arr, s_f):
     return new_bzr_ctrl_pts_arr
 
 
-def collapse_curves(bzr_ctrl_pts_arr, r_f):
+def collapse_curves(bzr_ctrl_pts_arr, r_f=0.2, diminish=True):
     """
     Moves the given bezier control points by a factor of r_f to the center of all points.
     :param bzr_ctrl_pts_arr: A numpy array with shape (x, 4, 2) and dtype np.float64 where 0<x represents the number of
@@ -792,11 +852,40 @@ def collapse_curves(bzr_ctrl_pts_arr, r_f):
     :return: A numpy array with shape (y, 4, 2) where 0<y<x with dtype np.float64 representing the new collapsed
     points array.
     """
+    r_bzr_ctrl_pts = bzr_ctrl_pts_arr
     center = np.average(bzr_ctrl_pts_arr, axis=(0, 1))  # Point to collapse to.
-    r_step = int(10 * (1 - r_f))
-    if r_step < 2:  # Step cannot be smaller than 2 otherwise all elements will be removed.
-        r_step = 2
-    r_bzr_ctrl_pts = np.delete(np.copy(bzr_ctrl_pts_arr), slice(None, None, r_step))  # Original [::int(r_f ** (-1))]
+    if diminish:
+        r_step = int(10 * (1 - r_f))
+        if r_step < 2:  # Step cannot be smaller than 2 otherwise all elements will be removed.
+            r_step = 2
+        r_bzr_ctrl_pts = np.delete(np.copy(bzr_ctrl_pts_arr), slice(None, None, r_step))  # Original [::int(r_f ** (-1))]
+    r_bzr_ctrl_pts_vecs = r_f * (center - r_bzr_ctrl_pts)
+    n_bzr_ctrl_pts = r_bzr_ctrl_pts + r_bzr_ctrl_pts_vecs
+    return n_bzr_ctrl_pts
+
+
+def collapse_content_curves(bzr_ctrl_pts_arr, r_f=0.2, diminish=True):
+    """
+    Moves the given bezier control points by a factor of r_f to the center of all points.
+    :param bzr_ctrl_pts_arr: A numpy array with shape (x, 4, 2) and dtype np.float64 where 0<x represents the number of
+    bezier curves.
+    :param r_f: A scalar with dtype np.float64 in range (0, 1] which represents the amount to reduce the points by. r_f
+    stands for reduce_factor. The factor determines to what distance to cut from the given points to the
+    center of mass. For example, if the f_d is 0.2, than the distance that will be reduced from each point to the
+    center of mass will be 0.2, hence the eventually the distance from each point to the center of the mass will be
+    0.8. In addition, the number of curves will be diminished respectively to r_f, e.g. if r_f equals to 0.2,
+    every eighth curve will be removed from the final array.
+    :return: A numpy array with shape (y, 4, 2) where 0<y<x with dtype np.float64 representing the new collapsed
+    points array.
+    """
+    r_bzr_ctrl_pts = bzr_ctrl_pts_arr
+    center = 0.5 * (np.min(bzr_ctrl_pts_arr, axis=(1, 0)) + np.max(bzr_ctrl_pts_arr, axis=(1, 0)))  # Point to collapse
+    # to.
+    if diminish:
+        r_step = int(10 * (1 - r_f))
+        if r_step < 2:  # Step cannot be smaller than 2 otherwise all elements will be removed.
+            r_step = 2
+        r_bzr_ctrl_pts = np.delete(np.copy(bzr_ctrl_pts_arr), slice(None, None, r_step))  # Original [::int(r_f ** (-1))]
     r_bzr_ctrl_pts_vecs = r_f * (center - r_bzr_ctrl_pts)
     n_bzr_ctrl_pts = r_bzr_ctrl_pts + r_bzr_ctrl_pts_vecs
     return n_bzr_ctrl_pts

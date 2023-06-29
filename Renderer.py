@@ -52,12 +52,33 @@ def vectorize_contour_to_file(parameters_path, os='w'):
         FileManager.save_bezier_control_points(bcp_f_name, im_bcp)
 
 
+# Not in use. Content is rasterized directly.
+def vectorize_content_to_file(parameters_path, os='w'):
+    dir_in_path, f_prefix, dir_out_bcp_path, start, end, digits_num, min_crv_ratio = FileManager.import_parameters(parameters_path)
+    # Iterating over the desired images.
+    for im_file_idx in range(int(start), int(end) + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while len(n_padded) < digits_num:
+            n_padded = f'0{n_padded}'
+        # Preparing the image.
+        im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
+        im = FileManager.import_image(im_name)
+        im_yiq = Colourizer.rgb_to_yiq(im)
+        im_y = im_yiq[:, :, 0]
+        # Finding the Bezier control points.
+        im_bcp = Vectorizer.vectorize_content_image(im_y, min_crv_ratio)
+        # Saving the Bezier control points to a file.
+        bcp_f_name = FileManager.file_path(dir_out_bcp_path, f_prefix, n_padded, 'txt', os)
+        FileManager.save_bezier_control_points(bcp_f_name, im_bcp)
+
+
 # Rasterization
 def raster_contour_from_file(parameters_path, os='w'):
     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
-    canvas_output_y, contiguous, diminish, diminish_min_l_r, dsp_dst_direction, dsp_dst_style, displace, \
-    displace_min, displace_max, displace_transform_max, distort, distort_min, distort_max, strk_w_min, strk_w_max, \
-    texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, \
+    canvas_output_y, scale, scale_factor, contiguous, diminish, diminish_min_l_r, dsp_dst_direction, dsp_dst_style, \
+    displace, displace_min, displace_max, displace_transform_max, distort, distort_min, distort_max, strk_w_min, \
+    strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, \
     alpha_f = FileManager.import_parameters(parameters_path)
     cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
     canvas_scaler = canvas_output_x / canvas_input_x
@@ -78,6 +99,8 @@ def raster_contour_from_file(parameters_path, os='w'):
         bcp_arr, bcp_num = FileManager.import_bezier_control_points(bcp_f_name)
         # Checking if there are any Bezier control points to raster.
         if bcp_num < 1:
+            im_rgb = np.dstack((im_r, im_g, im_b))
+            FileManager.save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
             continue
         bcp_arr *= canvas_scaler
         # Applying vector manipulation.
@@ -114,6 +137,49 @@ def raster_contour_from_file(parameters_path, os='w'):
             im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
         im_rgb = np.dstack((im_r, im_g, im_b))
         FileManager.save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
+
+
+def raster_content_from_file(parameters_path, os='w'):
+    dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
+    canvas_output_y, scale, scale_factor, contiguous, diminish, diminish_min_l_r, dsp_dst_direction, dsp_dst_style, \
+    displace, displace_min, displace_max, displace_transform_max, distort, distort_min, distort_max, strk_w_min, \
+    strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, \
+    alpha_f = FileManager.import_parameters(parameters_path)
+    cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
+    canvas_scaler = canvas_output_x / canvas_input_x
+    # Iterating over the desired images.
+    for im_file_idx in range(int(start), int(end) + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while len(n_padded) < digits_num:
+            n_padded = f'0{n_padded}'
+        im_id = f'{f_prefix}.{n_padded}'
+
+        # Preparing the image.
+        im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
+        im = FileManager.import_image(im_name)
+
+        # Applying vector manipulation.
+        # idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
+        # if diminish == 'True':
+        #     bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
+        # if displace == 'True':
+        #     dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
+        #     dsp_t = int(idx_factor * displace_transform_max)
+        #     bcp_arr = Vectorizer.displace_bezier_curves(bcp_arr, dsp_f, dsp_t)
+        # if distort == 'True':
+        #     dst_f = int(distort_min + idx_factor * (distort_max - distort_min))
+        #     bcp_arr = Vectorizer.distort_bezier_curves(bcp_arr, dst_f)
+        # Size in the frame.
+
+        # strk_w_max = 0.5 * content_radius
+        # Rastering the curves.
+
+        im_rgb, im_a = Rasterizer.content_rasterizer(im, cnvs_shape, canvas_scaler, strk_w_min, 3, 1, r_min,
+                                                     r_max, g_min, g_max, b_min, b_max, colour_style, alpha,
+                                                     alpha_c, alpha_f)
+        FileManager.save_rgba_image(dir_out_path, im_id, im_rgb, im_a, os)
+
 
 
 def raster_text_contour_from_file(parameters_path, os='w'):
@@ -185,6 +251,157 @@ def raster_text_contour_from_file(parameters_path, os='w'):
         FileManager.save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
 
 
+# def raster_content_from_file(parameters_path, os='w'):
+#     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
+#     canvas_output_y, scale, scale_factor, contiguous, diminish, diminish_min_l_r, dsp_dst_direction, dsp_dst_style, \
+#     displace, displace_min, displace_max, displace_transform_max, distort, distort_min, distort_max, strk_w_min, \
+#     strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, \
+#     alpha_f = FileManager.import_parameters(parameters_path)
+#     cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
+#     canvas_scaler = canvas_output_x / canvas_input_x
+#     # Iterating over the desired images.
+#     for im_file_idx in range(int(start), int(end) + 1):
+#         # Preparing the input/output file name.
+#         n_padded = f'{im_file_idx}'
+#         while len(n_padded) < digits_num:
+#             n_padded = f'0{n_padded}'
+#         im_name = f'{f_prefix}.{n_padded}'
+#         # Preparing the image.
+#         im_r = np.zeros(cnvs_shape)
+#         im_g = np.zeros(cnvs_shape)
+#         im_b = np.zeros(cnvs_shape)
+#         im_a = np.zeros(cnvs_shape)
+#         # Importing the Bezier control points from the text file.
+#         bcp_f_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'txt', os)
+#         bcp_arr, bcp_num = FileManager.import_bezier_control_points(bcp_f_name)
+#         # Checking if there are any Bezier control points to raster.
+#         if bcp_num < 1:
+#             im_rgb = np.dstack((im_r, im_g, im_b))
+#             FileManager.save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
+#             continue
+#         bcp_arr *= canvas_scaler
+#         # Applying vector manipulation.
+#         idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
+#         if diminish == 'True':
+#             bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
+#         if displace == 'True':
+#             dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
+#             dsp_t = int(idx_factor * displace_transform_max)
+#             bcp_arr = Vectorizer.displace_bezier_curves(bcp_arr, dsp_f, dsp_t)
+#         if distort == 'True':
+#             dst_f = int(distort_min + idx_factor * (distort_max - distort_min))
+#             bcp_arr = Vectorizer.distort_bezier_curves(bcp_arr, dst_f)
+#         # Size in the frame.
+#         center = 0.5 * (np.min(bcp_arr, axis=(1, 0)) + np.max(bcp_arr, axis=(1, 0)))
+#         content_radius = np.max(np.linalg.norm(center - bcp_arr, axis=2))
+#         # strk_w_max = 0.5 * content_radius
+#         # Rastering the curves.
+#         curves_num = len(bcp_arr)
+#         txr_arr = Rasterizer.generate_textures_arr(curves_num, texture_style, texture_type)  # Defining texture.
+#         rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
+#         clr_arr = Colourizer.generate_colours_arr(curves_num, colour_style, rgb_range)  # Defining colour.
+#         for crv_idx in range(curves_num):
+#             cur_bcp = bcp_arr[crv_idx]
+#             cur_txr = txr_arr[crv_idx]
+#             cur_clr = clr_arr[crv_idx]
+#             # strk_w_min = 1
+#             norm_to_center = np.min(np.linalg.norm(center - cur_bcp, axis=1))
+#             strk_w_max = 0.125 * (content_radius - norm_to_center) + strk_w_min
+#             stroke = Rasterizer.stroke_rasterizer(cur_bcp, strk_w_min, strk_w_max, texture=cur_txr,
+#                                                   canvas_shape=cnvs_shape)
+#             stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
+#                                                                         Colourizer.CLR_DIM))
+#             stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
+#             stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+#             stroke_im_r = stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+#             stroke_im_g = stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+#             stroke_im_b = stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+#             im_r = Colourizer.composite_rgb(stroke_im_r, im_r, stroke_alpha_im)
+#             im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
+#             im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
+#             im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+#         im_rgb = np.dstack((im_r, im_g, im_b))
+#         FileManager.save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
+
+
+# def raster_content_from_file0(parameters_path, os='w'):
+#     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x,\
+#     canvas_output_y, scale, scale_factor, contiguous, diminish, diminish_min_l_r, dsp_dst_direction, dsp_dst_style, \
+#     displace, displace_min, displace_max, displace_transform_max, distort, distort_min, distort_max, strk_w_min, \
+#     strk_w_max, texture_style, texture_type, colour_style, r_min, r_max, g_min, g_max, b_min, b_max, alpha, alpha_c, \
+#     alpha_f = FileManager.import_parameters(parameters_path)
+#     cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
+#     canvas_scaler = canvas_output_x / canvas_input_x
+#     # Iterating over the desired images.
+#     for im_file_idx in range(int(start), int(end) + 1):
+#         # Preparing the input/output file name.
+#         n_padded = f'{im_file_idx}'
+#         while len(n_padded) < digits_num:
+#             n_padded = f'0{n_padded}'
+#         im_name_out = f'{f_prefix}.{n_padded}'
+#         im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
+#         im = FileManager.import_image(im_name)
+#         im_yiq = Colourizer.rgb_to_yiq(im)
+#         alpha_intput_im = Colourizer.alpha_input_image(im)
+#         im_y = im_yiq[:, :, 0]
+#         # Finding the Bezier control points.
+#         bcp_arr, bcp_num, init_edge_pxl_num = Rasterizer.content_rasterizer(im_y, im_file_idx)
+#         # Preparing the image.
+#         im_r = np.zeros(cnvs_shape)
+#         im_g = np.zeros(cnvs_shape)
+#         im_b = np.zeros(cnvs_shape)
+#         im_a = np.zeros(cnvs_shape)
+#         # Checking if there are any Bezier control points to raster.
+#         if bcp_num < 1:
+#             im_rgb = np.dstack((im_r, im_g, im_b))
+#             FileManager.save_rgba_image(dir_out_path, im_name, im_rgb, im_a, os)
+#             continue
+#         bcp_arr = (bcp_arr * canvas_scaler)
+#         # Applying vector manipulation.
+#         idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
+#         if diminish == 'True':
+#             bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
+#         if displace == 'True':
+#             dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
+#             dsp_t = int(idx_factor * displace_transform_max)
+#             bcp_arr = Vectorizer.displace_bezier_curves(bcp_arr, dsp_f, dsp_t)
+#         if distort == 'True':
+#             dst_f = int(distort_min + idx_factor * (distort_max - distort_min))
+#             bcp_arr = Vectorizer.distort_bezier_curves(bcp_arr, dst_f)
+#         # Size in the frame.
+#         pxl_num = len(np.argwhere(alpha_intput_im != 0))
+#         relative_size = pxl_num / (im_y.shape[0] * im_y.shape[1])
+#         # Rastering the curves.
+#         curves_num = len(bcp_arr)
+#         txr_arr = Rasterizer.generate_textures_arr(curves_num, texture_style, texture_type)  # Defining texture.
+#         rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
+#         clr_arr = Colourizer.generate_content_colours_arr(curves_num, colour_style, rgb_range)  # Defining colour.
+#         content_radius = np.sqrt(pxl_num / np.pi)
+#         strk_w_min = 1
+#         strk_w_max = content_radius * 0.5
+#         # cur_strk_w_max = content_radius * relative_size * canvas_scaler + strk_w_min
+#         # if cur_strk_w_max > content_radius:
+#         #     strk_w_max
+#         for crv_idx in range(curves_num):
+#             cur_bcp = bcp_arr[crv_idx]
+#             cur_txr = txr_arr[crv_idx]
+#             cur_clr = clr_arr[crv_idx]
+#             stroke = Rasterizer.stroke_rasterizer(cur_bcp, strk_w_min, strk_w_max, texture=cur_txr, canvas_shape=cnvs_shape)
+#             stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
+#                                                                         Colourizer.CLR_DIM))
+#             stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
+#             stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+#             stroke_im_r = stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+#             stroke_im_g = stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+#             stroke_im_b = stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+#             im_r = Colourizer.composite_rgb(stroke_im_r, im_r, stroke_alpha_im)
+#             im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
+#             im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
+#             im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+#         im_rgb = np.dstack((im_r, im_g, im_b))
+#         FileManager.save_rgba_image(dir_out_path, im_name_out, im_rgb, im_a, os)
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Text ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def render_text(parameters_path):
     vectorize, rasterize, colourize, vectorize_path, rasterize_path, colourize_path, os = FileManager.import_parameters(
@@ -211,14 +428,14 @@ def render_Jellyfish(parameters_path):
 
 # ---------------------------------------------------- Content ---------------------------------------------------------
 def render_content(parameters_path):
-    vectorize, rasterize, colourize, vectorize_path, rasterize_path, colourize_path = FileManager.import_parameters(
+    vectorize, rasterize, colourize, vectorize_path, rasterize_path, colourize_path, os = FileManager.import_parameters(
         parameters_path)
     if vectorize == 'True':
-        vectorize_contour_to_file(vectorize_path, os='m')
+        vectorize_content_to_file(vectorize_path, os)
     if rasterize == 'True':
-        raster_contour_from_file(rasterize_path, os='m')
+        raster_content_from_file(rasterize_path, os)
     if colourize == 'True':
-        volume_colourizer(colourize_path, os='m')
+        volume_colourizer(colourize_path, os)
     return
 
 # ----------------------------------------------------- Cubist ---------------------------------------------------------
