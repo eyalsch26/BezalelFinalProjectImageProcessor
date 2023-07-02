@@ -167,18 +167,34 @@ def apply_radius_texture(r, stroke):
     return stroke * f
 
 
-def apply_chalk_texture(p, grad, r, stroke):
+# Original
+def apply_chalk_texture0(p, grad, r, stroke):
     m = np.linspace(-2 * r - 1, 2 * (r + 1), 4 * (r + 1) - 1)
     x, y = np.meshgrid(m, m)
     f = (np.sum(p) * np.ones(stroke.shape)) % np.abs(1 + x + y) == r
     return stroke * f
 
 
+def apply_chalk_texture(p, r, stroke):
+    m = np.linspace(int(-r), int(r) + 1, 2 * int(r) + 1)
+    x, y = np.meshgrid(m, m)
+    f = (np.sum(p) * np.random.randint(0, 2, stroke.shape)) % np.abs(1 + x + y)
+    return stroke * f
+
+
+def apply_pastel_texture(p, r, stroke):
+    strk_a = apply_chalk_texture(p, r, stroke)
+    strk_b = strk_a.T
+    strk_res = Vectorizer.blur_image(np.clip(strk_a + strk_b, 0, 1), 3)
+    return strk_res
+
+
 def apply_cloth_texture(stroke):
     x = np.ones(stroke.shape)
     y = np.ones(stroke.shape)
-    x[::4] = 0
-    y[::2] = 0
+    ratio = np.random.randint(1, 3)
+    x[::4 * ratio] = 0
+    y[::8 // ratio] = 0
     txr = Vectorizer.blur_image(x * y.T * apply_random_texture(stroke), 3)
     return stroke * txr
 
@@ -188,9 +204,31 @@ def apply_filament_texture(k, stroke):  # TODO: Not working.
     return res_stroke
 
 
+def apply_sin_texture(stroke):
+    strk_shape = stroke.shape
+    org = [np.random.randint(0, strk_shape[0]), np.random.randint(0, strk_shape[1])]
+    wave_l_r = np.random.randint(1, 13)
+    style_int = np.random.randint(0, 4)
+    stroke_res = stroke
+    mask = stroke != 0
+    if style_int == 0:
+        txr_im = sin_texture_x(strk_shape, org, wave_l_r)
+        stroke_res *= txr_im
+    elif style_int == 1:
+        txr_im = sin_texture_y(strk_shape, org, wave_l_r)
+        stroke_res *= txr_im
+    else:
+        txr_im = sin_texture(strk_shape, org, wave_l_r)
+        stroke_res *= txr_im
+    stroke_res -= np.min(stroke_res)
+    stroke_res /= np.max(stroke_res)
+    stroke_res *= mask
+    return stroke_res
+
+
 def sin_texture_x(im_shape, org, wave_len_r=1):
-    x = np.linspace(-org[0], im_shape[0] - org[0])
-    y = np.linspace(-org[1], im_shape[1] - org[1])
+    x = np.linspace(-org[0], im_shape[0] - org[0], im_shape[0])
+    y = np.linspace(-org[1], im_shape[1] - org[1], im_shape[1])
     xx, yy = np.meshgrid(x, y)
     xx /= im_shape[0] - org[0]
     xx *= wave_len_r
@@ -199,8 +237,8 @@ def sin_texture_x(im_shape, org, wave_len_r=1):
 
 
 def sin_texture_y(im_shape, org, wave_len_r=1):
-    x = np.linspace(-org[0], im_shape[0] - org[0])
-    y = np.linspace(-org[1], im_shape[1] - org[1])
+    x = np.linspace(-org[0], im_shape[0] - org[0], im_shape[0])
+    y = np.linspace(-org[1], im_shape[1] - org[1], im_shape[1])
     xx, yy = np.meshgrid(x, y)
     yy /= im_shape[1] - org[1]
     yy *= wave_len_r
@@ -209,8 +247,8 @@ def sin_texture_y(im_shape, org, wave_len_r=1):
 
 
 def sin_texture(im_shape, org, wave_len_r=1):
-    x = np.linspace(-org[0], im_shape[0] - org[0])
-    y = np.linspace(-org[1], im_shape[1] - org[1])
+    x = np.linspace(-org[0], im_shape[0] - org[0], im_shape[0])
+    y = np.linspace(-org[1], im_shape[1] - org[1], im_shape[1])
     xx, yy = np.meshgrid(x, y)
     xx /= im_shape[0] - org[0]
     yy /= im_shape[1] - org[1]
@@ -218,8 +256,23 @@ def sin_texture(im_shape, org, wave_len_r=1):
     yy *= wave_len_r
     x_sin = np.sin(xx)
     y_sin = np.sin(yy)
-    sin_im = np.dstack((x_sin, y_sin))
+    sin_im = x_sin + y_sin
     return sin_im
+
+
+def apply_stripes_texture(stroke):
+    strk_shape = stroke.shape
+    stripe_w = np.random.randint(1, 2 + int(np.min(strk_shape) // 8))
+    space_w = np.random.randint(1, 2 + int(np.min(strk_shape) // 8))
+    direction = 'vertical' if np.random.randint(0, 2) == 0 else 'horizontal'
+    style_int = np.random.randint(0, 3)
+    style = 'uniform'
+    if style_int == 0:
+        style = 'scale'
+    elif style_int == 1:
+        style = 'random'
+    txr_im = stripes_texture(strk_shape, stripe_w, space_w, direction, style)
+    return stroke * txr_im
 
 
 def stripes_texture(im_shape, stripe_width, space_width, direction='horizontal', style='uniform'):
@@ -234,7 +287,7 @@ def stripes_texture(im_shape, stripe_width, space_width, direction='horizontal',
     end = stripe_width
     for i in range(r):
         if style == 'scale':
-            cur_width_add = width_addition_arr[i]
+            cur_width_add = width_addition_arr[i % stripe_width]
             end += cur_width_add
         elif style == 'random':
             cur_width_add = width_addition_arr[np.random.randint(0, stripe_width)]
@@ -257,11 +310,21 @@ def volume_spread(im_shape, org):
     pass
 
 
-def add_texture(p, stroke, texture=1):
+def add_texture(p, r, stroke, texture=1):
     # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
-    if texture == 0:  # 'random'
+    if texture == 0:  # Random.
         return apply_random_texture(stroke)
-    return stroke  # 'solid'
+    elif texture == 2:  # Cloth.
+        return apply_cloth_texture(stroke)
+    elif texture == 3:  # Stripes.
+        return apply_stripes_texture(stroke)
+    elif texture == 4:  # Sin.
+        return apply_sin_texture(stroke)
+    elif texture == 5: # Chalk.
+        return apply_chalk_texture(p, r, stroke)
+    elif texture == 6: # Pastel.
+        return apply_pastel_texture(p, r, stroke)
+    return stroke  # Solid.
 
 
 def add_texture1(stroke, texture=1):
@@ -309,7 +372,7 @@ def pixel_stroke(p, r, blur_kernel=3, texture=1, opacity=1):
     # Adding blur.
     stroke = scipy.signal.convolve2d(stroke, Vectorizer.gaussian_kernel(blur_kernel), mode='same')
     # Adding texture.
-    stroke = add_texture(p, stroke, texture)
+    stroke = add_texture(p, r, stroke, texture)
     # Applying opacity + considering interpolation.
     stroke *= (opacity * (1 - np.linalg.norm(p - np.round(p))))
     return stroke
@@ -427,7 +490,7 @@ def diminish_bcps_num(bezier_control_points_arr, min_l_r=0.5):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def content_rasterizer(im, cnvs_shape, canvas_scaler, radius_min, blur_kernel, texture, r_min, r_max,
+def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, displace_max, radius_min, blur_kernel, texture, r_min, r_max,
                        g_min, g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f):
     # Preparing the image.
     canvas_output_x, canvas_output_y = cnvs_shape
@@ -451,27 +514,37 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, radius_min, blur_kernel, t
     content_radius = np.sqrt(0.5 * pxl_num / np.pi)
     diminish_step = int(0.5 * content_radius + 0.01 * pxl_num)
     pxl_idx_arr = np.random.randint(0, diminish_step, pxl_num)
-    pxl_pts = pxl_arr[np.argwhere(pxl_idx_arr == 0)]
+    pxl_pts = pxl_arr[pxl_idx_arr == 0]
     center = 0.5 * (np.min(pxl_pts, axis=0) + np.max(pxl_pts, axis=0))
-    radius_coof = 0.25 * coof
-    center_vecs = center - pxl_pts
+    radius_coof = 0.25 * coof * idx_factor
+    center_vecs = pxl_pts - center  # Vectors from the center to the points.
     norms_arr = np.linalg.norm(center_vecs, axis=1)
-    radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
     n = len(pxl_pts)
+    if displace == 'True':
+        radius_coof = 0.25 * coof * (1 - idx_factor)
+        displace_arr = np.random.randint(0, displace_max, n)
+        displace_vecs = idx_factor * displace_arr.reshape((len(displace_arr), 1)) * center_vecs / norms_arr.reshape(
+            (len(norms_arr), 1)) + center_vecs
+        pxl_pts += displace_vecs
+    radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
     rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
-    clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range)  # Defining colour.
+    clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range, idx_factor)  # Defining colour.
+    txr_arr = np.random.randint(0, 5, n)
     # Computing each pixel stroke.
     for i in range(n):
         big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
         p = pxl_pts[i]
         r = radius_arr[i]
         s = r / np.max(radius_arr)
+        cur_txr = txr_arr[i]
         cur_clr = clr_arr[i]
-        stroke = pixel_stroke(p, r, blur_kernel, texture, s)
+        stroke = pixel_stroke(p, r, blur_kernel, cur_txr, s)
         # Placing the stroke on the canvas.
         r_s = stroke.shape[0] // 2
-        new_p_x = np.uint16(p[0]) + original_zero_x
-        new_p_y = np.uint16(p[1]) + original_zero_y
+        # new_p_x = np.uint16(p[0]) + original_zero_x  # Original.
+        # new_p_y = np.uint16(p[1]) + original_zero_y  # Original.
+        new_p_x = int(p[0]) + original_zero_x
+        new_p_y = int(p[1]) + original_zero_y
         big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
         stroke = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
         stroke = np.clip(stroke, 0, 1)

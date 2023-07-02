@@ -107,6 +107,9 @@ def raster_contour_from_file(parameters_path, os='w'):
         idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
         if diminish == 'True':
             bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
+        if scale == 'True':
+            s_f = idx_factor ** scale_factor
+            bcp_arr = Vectorizer.scale_bezier_curves(bcp_arr, s_f)
         if displace == 'True':
             dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
             dsp_t = int(idx_factor * displace_transform_max)
@@ -159,25 +162,17 @@ def raster_content_from_file(parameters_path, os='w'):
         im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
         im = FileManager.import_image(im_name)
 
-        # Applying vector manipulation.
-        # idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
-        # if diminish == 'True':
-        #     bcp_arr = Rasterizer.diminish_bcps_num(bcp_arr, float(diminish_min_l_r))
-        # if displace == 'True':
-        #     dsp_f = int(displace_min + idx_factor * (displace_max - displace_min))
-        #     dsp_t = int(idx_factor * displace_transform_max)
-        #     bcp_arr = Vectorizer.displace_bezier_curves(bcp_arr, dsp_f, dsp_t)
-        # if distort == 'True':
-        #     dst_f = int(distort_min + idx_factor * (distort_max - distort_min))
-        #     bcp_arr = Vectorizer.distort_bezier_curves(bcp_arr, dst_f)
+        idx_factor = 1
+        if scale == 'True':
+            idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
         # Size in the frame.
 
         # strk_w_max = 0.5 * content_radius
         # Rastering the curves.
 
-        im_rgb, im_a = Rasterizer.content_rasterizer(im, cnvs_shape, canvas_scaler, strk_w_min, 3, 1, r_min,
-                                                     r_max, g_min, g_max, b_min, b_max, colour_style, alpha,
-                                                     alpha_c, alpha_f)
+        im_rgb, im_a = Rasterizer.content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace,
+                                                     displace_transform_max, strk_w_min, 3, 1, r_min, r_max, g_min,
+                                                     g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f)
         FileManager.save_rgba_image(dir_out_path, im_id, im_rgb, im_a, os)
 
 
@@ -438,12 +433,72 @@ def render_content(parameters_path):
         volume_colourizer(colourize_path, os)
     return
 
+
+def render_content_cubist_phase(parameters_path):
+    raster_front_left, raster_front_right, raster_rear_left, raster_rear_right, raster_front_left_path, \
+    raster_front_right_path, raster_rear_left_path, raster_rear_right_path, os = FileManager.import_parameters(
+    parameters_path)
+    if raster_front_left == 'True':
+        raster_content_from_file(raster_front_left_path, os)
+    if raster_front_right == 'True':
+        raster_content_from_file(raster_front_right_path, os)
+    if raster_rear_left == 'True':
+        raster_content_from_file(raster_rear_left_path, os)
+    if raster_rear_right == 'True':
+        raster_content_from_file(raster_rear_right_path, os)
+    return
+
+
 # ----------------------------------------------------- Cubist ---------------------------------------------------------
+def vectorize_cubist_form_to_file(parameters_path):
+    vectorize_front_left, vectorize_front_right, vectorize_rear_left, vectorize_rear_right, \
+    vectorize_front_left_path, vectorize_front_right_path, vectorize_rear_left_path, vectorize_rear_right_path, \
+    os = FileManager.import_parameters(parameters_path)
+    if vectorize_front_left == 'True':
+        vectorize_contour_to_file(vectorize_front_left_path, os)
+    if vectorize_front_right == 'True':
+        vectorize_contour_to_file(vectorize_front_right_path, os)
+    if vectorize_rear_left == 'True':
+        vectorize_contour_to_file(vectorize_rear_left_path, os)
+    if vectorize_rear_right == 'True':
+        vectorize_contour_to_file(vectorize_rear_right_path, os)
+    return
+
+
+def raster_cubist_form_to_file(parameters_path):
+    raster_front_left, raster_front_right, raster_rear_left, raster_rear_right, \
+    raster_front_left_convergence_path, raster_front_left_stable_path, raster_front_left_divergence_path, \
+    raster_front_right_convergence_path, raster_front_right_stable_path, raster_front_right_divergence_path, \
+    raster_rear_left_convergence_path, raster_rear_left_stable_path, raster_rear_left_divergence_path, \
+    raster_rear_right_convergence_path, raster_rear_right_stable_path, raster_rear_right_divergence_path, \
+    os = FileManager.import_parameters(parameters_path)
+    if raster_front_left == 'True':
+        raster_contour_from_file(raster_front_left_convergence_path, os)
+        raster_contour_from_file(raster_front_left_stable_path, os)
+        raster_contour_from_file(raster_front_left_divergence_path, os)
+    if raster_front_right == 'True':
+        raster_contour_from_file(raster_front_right_convergence_path, os)
+        raster_contour_from_file(raster_front_right_stable_path, os)
+        raster_contour_from_file(raster_front_right_divergence_path, os)
+    if raster_rear_left == 'True':
+        raster_contour_from_file(raster_rear_left_convergence_path, os)
+        raster_contour_from_file(raster_rear_left_stable_path, os)
+        raster_contour_from_file(raster_rear_left_divergence_path, os)
+    if raster_rear_right == 'True':
+        raster_contour_from_file(raster_rear_right_convergence_path, os)
+        raster_contour_from_file(raster_rear_right_stable_path, os)
+        raster_contour_from_file(raster_rear_right_divergence_path, os)
+    return
+
+
 def render_cubist(vectorize, rasterize, colourize):
     if vectorize:
         vectorize_contour_to_file(
             '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Cubist'
             '/Vectorization_Cubist_FrontLeft.txt', os='m')
+        vectorize_contour_to_file(
+            '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Cubist'
+            '/Vectorization_Cubist_FrontRight.txt', os='m')
         vectorize_contour_to_file(
             '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Cubist'
             '/Vectorization_Cubist_RearLeft.txt', os='m')
@@ -488,6 +543,34 @@ def render_headline():
     render_text(FileManager.RND_TXT_HEAD)
     return
 
+
 def render_content_setup():
     render_content(FileManager.RND_CNT_SETUP)
+    return
+
+
+def render_content_cubist():
+    convergence, stable, divergence = FileManager.import_parameters(FileManager.RND_CNT_CUBST)
+    if convergence == 'True':
+        render_content_cubist_phase(FileManager.RND_CNT_CUBST_CONV)
+    if stable == 'True':
+        render_content_cubist_phase(FileManager.RND_CNT_CUBST_STBL)
+    if divergence == 'True':
+        render_content_cubist_phase(FileManager.RND_CNT_CUBST_DVRG)
+    return
+
+
+def render_form_cubist():
+    vectorize, rasterize, vectorize_path, rasterize_path = FileManager.import_parameters(FileManager.RND_FRM_CUBST)
+    if vectorize == 'True':
+        vectorize_cubist_form_to_file(vectorize_path)
+    if rasterize == 'True':
+        raster_cubist_form_to_file(rasterize_path)
+    # convergence, stable, divergence = FileManager.import_parameters(FileManager.RND_FRM_CUBST)
+    # if convergence == 'True':
+    #     render_form_cubist_phase(FileManager.RND_FRM_CUBST_CONV)
+    # if stable == 'True':
+    #     render_form_cubist_phase(FileManager.RND_FRM_CUBST_STBL)
+    # if divergence == 'True':
+    #     render_form_cubist_phase(FileManager.RND_FRM_CUBST_DVRG)
     return

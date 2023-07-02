@@ -76,7 +76,7 @@ def alpha_channel(im_y, alpha='n', c=1, k=3):
     return np.ones(im_y.shape)
 
 
-def generate_colours_arr(l, generation_method, rgb_range):
+def generate_colours_arr(l, generation_method, rgb_range, idx_factor=1):
     if generation_method == 'random':
         clr_arr = (np.random.randint(0, 256, 3 * l) / 255).reshape((l, 3))
         return clr_arr
@@ -84,6 +84,18 @@ def generate_colours_arr(l, generation_method, rgb_range):
         r = np.random.randint(rgb_range[0][0], rgb_range[0][1] + 1, l) / 255
         g = np.random.randint(rgb_range[1][0], rgb_range[1][1] + 1, l) / 255
         b = np.random.randint(rgb_range[2][0], rgb_range[2][1] + 1, l) / 255
+        clr_arr = np.dstack((r, g, b)).reshape(l, 3)
+        return clr_arr
+    elif generation_method == 'index':
+        r_s = rgb_range[0][0]
+        r_e = rgb_range[0][1]
+        g_s = rgb_range[1][0]
+        g_e = rgb_range[1][1]
+        b_s = rgb_range[2][0]
+        b_e = rgb_range[2][1]
+        r = np.random.randint(r_s * (1 - idx_factor), r_e + idx_factor * (255 - r_e) + 1, l) / 255
+        g = np.random.randint(g_s * (1 - idx_factor), g_e + idx_factor * (255 - g_e) + 1, l) / 255
+        b = np.random.randint(b_s * (1 - idx_factor), b_e + idx_factor * (255 - b_e) + 1, l) / 255
         clr_arr = np.dstack((r, g, b)).reshape(l, 3)
         return clr_arr
 

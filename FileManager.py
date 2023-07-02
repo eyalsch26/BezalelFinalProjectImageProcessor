@@ -23,6 +23,21 @@ CLR_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Colou
 RND_TXT_HEAD = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Text/Headline' \
                '/ParametersFiles_Text_Headline.txt'
 RND_CNT_SETUP = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Setup/ParametersFiles_Content_Setup.txt'
+RND_CNT_CUBST = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist/ParametersFiles_Content_Cubist.txt'
+RND_CNT_CUBST_CONV = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
+                     '/Convergence/ParametersFiles_Content_Cubist_Convergence.txt'
+RND_CNT_CUBST_STBL = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
+                  '/Stable/ParametersFiles_Content_Cubist_Stable.txt'
+RND_CNT_CUBST_DVRG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
+                  '/Divergence/ParametersFiles_Content_Cubist_Divergence.txt'
+RND_FRM_CUBST = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Cubist' \
+              '/ParametersFile_Form_Cubist.txt'
+RND_FRM_CUBST_CONV = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
+                     '/Convergence/ParametersFiles_Content_Cubist_Convergence.txt'
+RND_FRM_CUBST_STBL = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
+                  '/Stable/ParametersFiles_Content_Cubist_Stable.txt'
+RND_FRM_CUBST_DVRG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
+                  '/Divergence/ParametersFiles_Content_Cubist_Divergence.txt'
 
 # Constants
 FPS = 24
