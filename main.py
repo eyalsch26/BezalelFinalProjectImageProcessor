@@ -19,8 +19,9 @@ if __name__ == '__main__':
     # FileManager.vectorize_contour_to_file('', os='w')
     # FileManager.raster_contour_from_file('', os='w')
     # Mac
+    Renderer.render_background()
     # Renderer.render_content_setup()
-    Renderer.render_content_cubist()
+    # Renderer.render_content_cubist()
     # Renderer.render_form_cubist()
     # Renderer.render_cubist(True, False, False)
     # FileManager.raster_contour_from_file(

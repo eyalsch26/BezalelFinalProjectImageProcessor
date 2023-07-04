@@ -612,7 +612,7 @@ def content_vector_rasterizer(im, idx=24, min_pts_num=80, diminish_pts_f=20):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Background ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def background_rasterizer(cnvs_shape, blur_kernel=5, radius=8, texture=50, alpha='y'):
+def background_rasterizer(cnvs_shape, blur_kernel=5, radius=50, texture=50, alpha='y'):
     # Preparing the image.
     canvas_output_x, canvas_output_y = cnvs_shape
     im_a = np.zeros(cnvs_shape)
@@ -622,8 +622,8 @@ def background_rasterizer(cnvs_shape, blur_kernel=5, radius=8, texture=50, alpha
     original_end_x = 3 * original_zero_x
     original_end_y = 3 * original_zero_y
     # Computing each pixel stroke.
-    for i in range(0, canvas_output_x, radius // 2):
-        for j in range(radius // 4, canvas_output_y, radius // 2):
+    for i in range(0, canvas_output_x, radius):
+        for j in range(radius // 2, canvas_output_y, radius):
             big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
             p = np.array([i, j])
             stroke = pixel_stroke(p, radius, blur_kernel, texture)
@@ -637,6 +637,11 @@ def background_rasterizer(cnvs_shape, blur_kernel=5, radius=8, texture=50, alpha
             stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha)
             im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
     return im_a
+
+
+def background_interpolation(im_0, im_1, idx_factor):
+    im = (1 - idx_factor) * im_0 + idx_factor * im_1
+    return im
 
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------
 

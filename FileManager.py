@@ -33,7 +33,7 @@ RND_CNT_CUBST_DVRG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFil
 RND_FRM_CUBST = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Cubist' \
               '/ParametersFile_Form_Cubist.txt'
 RND_BG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Background' \
-         '/ParametersFiles_Background.txt'
+         '/ParametersFile_Background.txt'
 
 # Constants
 FPS = 24

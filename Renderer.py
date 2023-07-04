@@ -254,11 +254,14 @@ def render_text(parameters_path):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Background ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def render_background():
+def render_background_raster(parameters_path, os):
     dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x, \
-    canvas_output_y, os = FileManager.import_parameters(FileManager.RND_BG)
+    canvas_output_y = FileManager.import_parameters(parameters_path)
     cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
-    canvas_scaler = canvas_output_x / canvas_input_x
+    im_r = np.ones(cnvs_shape)
+    im_g = np.ones(cnvs_shape)
+    im_b = np.ones(cnvs_shape)
+    im_rgb = np.dstack((im_r, im_g, im_b))
     # Iterating over the desired images.
     for im_file_idx in range(int(start), int(end) + 1):
         # Preparing the input/output file name.
@@ -267,12 +270,52 @@ def render_background():
             n_padded = f'0{n_padded}'
         im_id = f'{f_prefix}.{n_padded}'
         # Preparing the image.
-        im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
-        im = FileManager.import_image(im_name)
-        im_rgb = im[:, :, :3]
+        # im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
+        # im = FileManager.import_image(im_name)
+        # im_rgb = im[:, :, :3]
         # Rastering the image.
         im_a = Rasterizer.background_rasterizer(cnvs_shape)
         FileManager.save_rgba_image(dir_out_path, im_id, im_rgb, im_a, os)
+    return
+
+
+def render_background_interpolation(parameters_path, os):
+    dir_in_path, f_prefix, dir_out_path, start, end, digits_num, canvas_input_x, canvas_input_y, canvas_output_x, \
+    canvas_output_y, interpolation_num = FileManager.import_parameters(parameters_path)
+    cnvs_shape = (int(canvas_output_x), int(canvas_output_y))
+    im_r = np.ones(cnvs_shape)
+    im_g = np.ones(cnvs_shape)
+    im_b = np.ones(cnvs_shape)
+    im_rgb = np.dstack((im_r, im_g, im_b))
+    # Iterating over the desired images.
+    for im_file_idx in range(int(start), int(end) + 1):
+        # Preparing the input file name.
+        n_padded_start = f'{im_file_idx}'
+        n_padded_end = f'{im_file_idx + 1}'
+        if im_file_idx == end:  # Cyclic interpolation between the last and first frames.
+            n_padded_end = f'{int(start)}'
+        while len(n_padded_start) < digits_num:
+            n_padded_start = f'0{n_padded_start}'
+        while len(n_padded_end) < digits_num:
+            n_padded_end = f'0{n_padded_end}'
+        # Preparing the image.
+        im_name_start = FileManager.file_path(dir_in_path, f_prefix, n_padded_start, 'png', os)
+        im_name_end = FileManager.file_path(dir_in_path, f_prefix, n_padded_end, 'png', os)
+        im_start = FileManager.import_image(im_name_start)
+        im_end = FileManager.import_image(im_name_end)
+        im_a_start = im_start[:, :, 3]
+        im_a_end = im_end[:, :, 3]
+        # Interpolating the image.
+        for idx in range(int(interpolation_num)):
+            idx_factor = idx / (interpolation_num - 1)
+            im_a = Rasterizer.background_interpolation(im_a_start, im_a_end, idx_factor)
+            # Preparing the output file name.
+            im_id_padded = f'{(im_file_idx - 1) * int(interpolation_num) + idx + 1}'
+            while len(im_id_padded) < digits_num:
+                im_id_padded = f'0{im_id_padded}'
+            im_id = f'{f_prefix}.{im_id_padded}'
+            FileManager.save_rgba_image(dir_out_path, im_id, im_rgb, im_a, os)
+    return
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Creatures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -407,6 +450,15 @@ def render_cubist(vectorize, rasterize, colourize):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Commands ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def render_headline():
     render_text(FileManager.RND_TXT_HEAD)
+    return
+
+
+def render_background():
+    raster, interpolate, raster_path, interpolation_path, os = FileManager.import_parameters(FileManager.RND_BG)
+    if raster == 'True':
+        render_background_raster(raster_path, os)
+    if interpolate == 'True':
+        render_background_interpolation(interpolation_path, os)
     return
 
 
