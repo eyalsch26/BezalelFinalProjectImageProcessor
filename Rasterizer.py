@@ -183,9 +183,16 @@ def apply_chalk_texture(p, r, stroke):
 
 
 def apply_pastel_texture(p, r, stroke):
-    strk_a = apply_chalk_texture(p, r, stroke)
-    strk_b = strk_a.T
-    strk_res = Vectorizer.blur_image(np.clip(strk_a + strk_b, 0, 1), 3)
+    txr_indices = np.random.randint(0, stroke.shape[0] * stroke.shape[1], 2 * int(r))
+    txr_im = np.zeros(stroke.shape[0] * stroke.shape[1])
+    txr_im[txr_indices] = 1
+    k = int(0.25 * r) + 1
+    cur_kernel = np.ones((k, k))
+    strk_res = scipy.signal.convolve2d(txr_im.reshape(stroke.shape), cur_kernel, mode='same')
+    strk_res = Vectorizer.blur_image(strk_res, 3)
+    # strk_res = Vectorizer.blur_image(np.clip(scipy.signal.convolve2d(txr_im.reshape(stroke.shape), cur_kernel,
+    #                                                                  mode='same'), 0, 1), 3)
+    strk_res *= stroke / np.max(strk_res)
     return strk_res
 
 
@@ -310,21 +317,37 @@ def volume_spread(im_shape, org):
     pass
 
 
+# Original.
+def add_texture0(p, r, stroke, texture=1):
+    # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
+    if texture == 0:  # Random. 8%.
+        return apply_random_texture(stroke)
+    elif texture == 2:  # Cloth. 25%.
+        return apply_cloth_texture(stroke)
+    elif texture == 3:  # Stripes. 20%.
+        return apply_stripes_texture(stroke)
+    elif texture == 4:  # Sin. 20%.
+        return apply_sin_texture(stroke)
+    elif texture == 5:  # Pastel. 20%.
+        return apply_pastel_texture(p, r, stroke)
+    elif texture == 6:  # Chalk. 0%.
+        return apply_chalk_texture(p, r, stroke)
+    return stroke  # Solid. 7%.
+
+
 def add_texture(p, r, stroke, texture=1):
     # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
-    if texture == 0:  # Random.
-        return apply_random_texture(stroke)
-    elif texture == 2:  # Cloth.
-        return apply_cloth_texture(stroke)
-    elif texture == 3:  # Stripes.
-        return apply_stripes_texture(stroke)
-    elif texture == 4:  # Sin.
+    if texture < 40:
+        if texture > 15:
+            return apply_cloth_texture(stroke)
+        elif texture < 8:
+                return apply_random_texture(stroke)
+        return stroke
+    if texture > 60:
+        if texture > 80:
+            return apply_stripes_texture(stroke)
         return apply_sin_texture(stroke)
-    elif texture == 5: # Chalk.
-        return apply_chalk_texture(p, r, stroke)
-    elif texture == 6: # Pastel.
-        return apply_pastel_texture(p, r, stroke)
-    return stroke  # Solid.
+    return apply_pastel_texture(p, r, stroke)
 
 
 def add_texture1(stroke, texture=1):
@@ -529,7 +552,7 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, disp
     radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
     rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
     clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range, idx_factor)  # Defining colour.
-    txr_arr = np.random.randint(0, 5, n)
+    txr_arr = np.random.randint(0, 100, n)
     # Computing each pixel stroke.
     for i in range(n):
         big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
@@ -543,8 +566,8 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, disp
         r_s = stroke.shape[0] // 2
         # new_p_x = np.uint16(p[0]) + original_zero_x  # Original.
         # new_p_y = np.uint16(p[1]) + original_zero_y  # Original.
-        new_p_x = int(p[0]) + original_zero_x
-        new_p_y = int(p[1]) + original_zero_y
+        new_p_x = np.uint32(p[0]) + original_zero_x
+        new_p_y = np.uint32(p[1]) + original_zero_y
         big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
         stroke = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
         stroke = np.clip(stroke, 0, 1)
@@ -563,8 +586,7 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, disp
     return im_rgb, im_a
 
 
-
-def content_rasterizer0(im, idx=24, min_pts_num=80, diminish_pts_f=20):
+def content_vector_rasterizer(im, idx=24, min_pts_num=80, diminish_pts_f=20):
     relative_idx = (idx % FileManager.FPS) / FileManager.FPS
     # Contour.
     contour = Vectorizer.detect_edges(im)
@@ -588,6 +610,33 @@ def content_rasterizer0(im, idx=24, min_pts_num=80, diminish_pts_f=20):
     # radius_arr = 0.5 * vecs_norm
     return bcp, bzr_crv_num, initial_contour_pxl_num
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Background ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def background_rasterizer(cnvs_shape, blur_kernel=5, radius=8, texture=50, alpha='y'):
+    # Preparing the image.
+    canvas_output_x, canvas_output_y = cnvs_shape
+    im_a = np.zeros(cnvs_shape)
+    # Preparing the image base.
+    original_zero_x = np.uint16(0.5 * canvas_output_x)
+    original_zero_y = np.uint16(0.5 * canvas_output_y)
+    original_end_x = 3 * original_zero_x
+    original_end_y = 3 * original_zero_y
+    # Computing each pixel stroke.
+    for i in range(0, canvas_output_x, radius // 2):
+        for j in range(radius // 4, canvas_output_y, radius // 2):
+            big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
+            p = np.array([i, j])
+            stroke = pixel_stroke(p, radius, blur_kernel, texture)
+            # Placing the stroke on the canvas.
+            r_s = stroke.shape[0] // 2
+            new_p_x = np.uint16(p[0]) + original_zero_x  # Original.
+            new_p_y = np.uint16(p[1]) + original_zero_y  # Original.
+            big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
+            stroke = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
+            stroke = np.clip(stroke, 0, 1)
+            stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha)
+            im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+    return im_a
 
 # ------------------------------------------------ Graveyard Below -----------------------------------------------------
 
