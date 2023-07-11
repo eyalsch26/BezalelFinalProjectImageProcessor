@@ -19,10 +19,12 @@ if __name__ == '__main__':
     # FileManager.vectorize_contour_to_file('', os='w')
     # FileManager.raster_contour_from_file('', os='w')
     # Mac
-    Renderer.render_background()
+    # Renderer.render_background()
     # Renderer.render_content_setup()
+    # Renderer.render_form_linear()
     # Renderer.render_content_cubist()
     # Renderer.render_form_cubist()
+    Renderer.render_form_smooth()
     # Renderer.render_cubist(True, False, False)
     # FileManager.raster_contour_from_file(
     #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Jellyfish'
@@ -30,3 +32,8 @@ if __name__ == '__main__':
     # FileManager.volume_colourizer(
     #     '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Jellyfish'
     #     '/Colourization_Jellyfish_2.txt', os='m')
+
+    # Tests.my_edge_detection_check()
+    # Tests.my_corner_detection_check()
+    # Tests.trace_edges_check()
+    # Tests.vectorize_check_mac()

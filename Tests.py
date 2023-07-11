@@ -199,33 +199,36 @@ def laplacian_edge_detection_check(t_co):
 
 
 # Works. Edges are not necessarily one pixel wide (but improved).
-def my_edge_detection_check(t1_co, t2_co):
+def my_edge_detection_check(t1_co=0.975, t2_co=0.995):
     # Preparing the image and the filter.
-    im = FileManager.import_image(FileManager.FRAME_IN)
+    im = FileManager.import_image(FileManager.FRAME_IN_MAC)
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(im_y.shape)
     im_q = np.zeros(im_y.shape)
     # Computing the image's edges.
-    canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
+    # canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)  # Original.
+    canny_edges_im = Vectorizer.detect_edges_new(im_y)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 51, f'Dog_01DetectEdgesT{t1_co}T{t2_co}', True)
+    # FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 51, f'Dog_01DetectEdgesT{t1_co}T{t2_co}', True)  # Original.
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 2, f'DetectEdges', True, 'm')
 
 
-def my_corner_detection_check(t1_co, t2_co):
+def my_corner_detection_check(t1_co=0.975, t2_co=0.995):
     # Preparing the image and the filter.
-    im = FileManager.import_image(FileManager.FRAME_IN)
+    im = FileManager.import_image(FileManager.FRAME_IN_MAC)
     im_yiq = Colourizer.rgb_to_yiq(im)
     im_y = im_yiq[:, :, 0]
     im_i = np.zeros(im_y.shape)
     im_q = np.zeros(im_y.shape)
     # Computing the image's edges.
-    canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)
+    canny_edges_im = Vectorizer.detect_edges_new(im_y)
     corners_im = Vectorizer.detect_corners(canny_edges_im)
-    im_yiq_new = np.dstack((corners_im, im_i, im_q))
+    corners_on_edges_im = (canny_edges_im + corners_im) * 0.5
+    im_yiq_new = np.dstack((corners_on_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 51, f'Dog_01DetectCornersT{t1_co}T{t2_co}', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 3, f'DetectCorners', True, 'm')
 
 
 # Works.
@@ -314,11 +317,33 @@ def vectorize_check_mac():
     im_i = np.zeros(im_y.shape)
     im_q = np.zeros(im_y.shape)
     # Computing the image's edges.
-    bzr_ctrl_pts_arr = Vectorizer.vectorize_image(im_y)
+    bzr_ctrl_pts_arr = Vectorizer.vectorize_image_new(im_y)
     raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 00, f'VectorizeHD720', True)
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 7, f'Vectorize', True, 'm')
+
+
+def trace_edges_check():
+    # Preparing the image and the filter.
+    im = FileManager.import_image(FileManager.FRAME_IN_MAC)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    im_i = np.zeros(im_y.shape)
+    im_q = np.zeros(im_y.shape)
+    # Computing the image's edges.
+    edges_im = Vectorizer.detect_edges_new(im_y)
+    corners_im = Vectorizer.detect_corners(edges_im)
+    paths_dict = Vectorizer.trace_edges_to_paths_new(edges_im, corners_im, 45)
+    paths_num = len(paths_dict)
+    for p in range(paths_num):
+        new_y_im = np.zeros(im_y.shape)
+        rows = paths_dict[p].T[0].astype(int)
+        columns = paths_dict[p].T[1].astype(int)
+        new_y_im[rows, columns] = 1
+        im_yiq_new = np.dstack((new_y_im, im_i, im_q))
+        im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+        FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 4, f'TracePaths{p}', True, 'm')
 
 
 # Works.

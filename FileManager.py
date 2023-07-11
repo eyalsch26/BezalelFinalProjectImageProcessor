@@ -15,7 +15,7 @@ RAST_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
 FRAME_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog_02.png'
 TEXT_DIR = 'G:\Eyal\Documents\Bezalel\FinalProject\BCPData'
 # Mac
-FRAME_IN_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Input/Shape.01.png'
+FRAME_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/Thread/images/Render/Form/Smooth/Birth/SmoothBirth.3554.png'
 FRAMES_DIR_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Life/images/Shape.01.png'
 VEC_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector'
 RAST_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Raster'
@@ -34,6 +34,10 @@ RND_FRM_CUBST = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/Pa
               '/ParametersFile_Form_Cubist.txt'
 RND_BG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Background' \
          '/ParametersFile_Background.txt'
+RND_FRM_LNR = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Linear' \
+              '/ParametersFile_Form_Linear.txt'
+RND_FRM_SMTH = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Smooth' \
+              '/ParametersFile_Form_Smooth.txt'
 
 # Constants
 FPS = 24
@@ -74,9 +78,11 @@ def import_image(path):
     return frame
 
 
-def save_image(dir_path, image_frame, frame_index, name_suffix, as_grayscale=True):
+def save_image(dir_path, image_frame, frame_index, name_suffix, as_grayscale=True, os='w'):
     # Naming the path of the new frame to be saved.
     path = dir_path + '\\frame_' + str(frame_index) + '_' + name_suffix + '.png'
+    if os == 'm':
+        path = dir_path + '/frame_' + str(frame_index) + '_' + name_suffix + '.png'
     # Saving the path.
     if as_grayscale:
         image_frame = Colourizer.rgb_to_gray(image_frame)

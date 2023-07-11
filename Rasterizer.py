@@ -12,7 +12,8 @@ BZ_DEG = 3
 BZ_CTRL_PTS = 4
 DIMS = 2
 MIN_OPACITY = 0.2
-TXR_NUM = 13  # 0: random. 1: solid. 2: chalk. 3: charcoal. 4: watercolour. 5: oil_dry. 6: oil_wet. 7: pen. 8: pencil.
+TXR_PER_NUM = 100  # 0: random. 1: solid. 2: chalk. 3: charcoal. 4: watercolour. 5: oil_dry. 6: oil_wet. 7: pen. 8:
+# pencil.
 # 9: perlin_noise. 10: splash. 11: spark. 12: radius_division. 13: bubble. 14: fur. 15: cloth.
 
 
@@ -119,7 +120,10 @@ def stroke_shape(bcp, strk_max_radius):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Textures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def generate_textures_arr(l, generation_method, uniform_txr=1, given_txr_arr=(0, 1)):
     if generation_method == 'random':
-        txr_arr = np.arange(l) % TXR_NUM
+        txr_arr = np.random.randint(0, TXR_PER_NUM, l)
+        return txr_arr
+    elif generation_method == 'cyclic':
+        txr_arr = np.arange(l) % TXR_PER_NUM
         return txr_arr
     elif generation_method == 'uniform':
         txr_arr = np.ones(l) * uniform_txr
@@ -189,10 +193,12 @@ def apply_pastel_texture(p, r, stroke):
     k = int(0.25 * r) + 1
     cur_kernel = np.ones((k, k))
     strk_res = scipy.signal.convolve2d(txr_im.reshape(stroke.shape), cur_kernel, mode='same')
-    strk_res = Vectorizer.blur_image(strk_res, 3)
+    blur_kernel = int(2 * np.sqrt(r)) - 1 if r > 4 else 3
+    strk_res = Vectorizer.blur_image(strk_res, blur_kernel)
     # strk_res = Vectorizer.blur_image(np.clip(scipy.signal.convolve2d(txr_im.reshape(stroke.shape), cur_kernel,
     #                                                                  mode='same'), 0, 1), 3)
     strk_res *= stroke / np.max(strk_res)
+    strk_res = np.sqrt(strk_res)
     return strk_res
 
 
@@ -513,7 +519,7 @@ def diminish_bcps_num(bezier_control_points_arr, min_l_r=0.5):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, displace_max, radius_min, blur_kernel, texture, r_min, r_max,
+def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, displace_max, radius_min, blur_kernel, texture_style, texture_type, r_min, r_max,
                        g_min, g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f):
     # Preparing the image.
     canvas_output_x, canvas_output_y = cnvs_shape
@@ -552,7 +558,7 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, disp
     radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
     rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
     clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range, idx_factor)  # Defining colour.
-    txr_arr = np.random.randint(0, 100, n)
+    txr_arr = generate_textures_arr(n, texture_style, texture_type)  # np.random.randint(0, 100, n)
     # Computing each pixel stroke.
     for i in range(n):
         big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))

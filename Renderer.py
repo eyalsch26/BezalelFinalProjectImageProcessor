@@ -46,7 +46,8 @@ def vectorize_contour_to_file(parameters_path, os='w'):
         im_yiq = Colourizer.rgb_to_yiq(im)
         im_y = im_yiq[:, :, 0]
         # Finding the Bezier control points.
-        im_bcp = Vectorizer.vectorize_image(im_y, min_crv_ratio)
+        # im_bcp = Vectorizer.vectorize_image(im_y, min_crv_ratio)
+        im_bcp = Vectorizer.vectorize_image_new(im_y, min_crv_ratio)
         # Saving the Bezier control points to a file.
         bcp_f_name = FileManager.file_path(dir_out_bcp_path, f_prefix, n_padded, 'txt', os)
         FileManager.save_bezier_control_points(bcp_f_name, im_bcp)
@@ -165,8 +166,9 @@ def raster_content_from_file(parameters_path, os='w'):
             idx_factor = Vectorizer.index_displace_distort_factor(im_file_idx, start, end, dsp_dst_direction, dsp_dst_style)
         # Rastering the image.
         im_rgb, im_a = Rasterizer.content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace,
-                                                     displace_transform_max, strk_w_min, 3, 1, r_min, r_max, g_min,
-                                                     g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f)
+                                                     displace_transform_max, strk_w_min, 3, texture_style, texture_type,
+                                                     r_min, r_max, g_min,g_max, b_min, b_max, colour_style, alpha,
+                                                     alpha_c, alpha_f)
         FileManager.save_rgba_image(dir_out_path, im_id, im_rgb, im_a, os)
 
 
@@ -467,6 +469,15 @@ def render_content_setup():
     return
 
 
+def render_form_linear():
+    vectorize, rasterize, vectorize_path, rasterize_path, os = FileManager.import_parameters(FileManager.RND_FRM_LNR)
+    if vectorize == 'True':
+        vectorize_contour_to_file(vectorize_path, os)
+    if rasterize == 'True':
+        raster_contour_from_file(rasterize_path, os)
+    return
+
+
 def render_content_cubist():
     convergence, stable, divergence = FileManager.import_parameters(FileManager.RND_CNT_CUBST)
     if convergence == 'True':
@@ -491,4 +502,31 @@ def render_form_cubist():
     #     render_form_cubist_phase(FileManager.RND_FRM_CUBST_STBL)
     # if divergence == 'True':
     #     render_form_cubist_phase(FileManager.RND_FRM_CUBST_DVRG)
+    return
+
+
+def render_form_smooth_phase(parameters_path):
+    vectorize, rasterize, vectorize_path, rasterize_path, os = FileManager.import_parameters(parameters_path)
+    if vectorize == 'True':
+        vectorize_contour_to_file(vectorize_path, os)
+    if rasterize == 'True':
+        raster_contour_from_file(rasterize_path, os)
+    return
+
+
+def render_form_smooth():
+    birth, sniffing, wipe, gallop, jump, sit, birth_path, sniffing_path, wipe_path, \
+    gallop_path, jump_path, sit_path = FileManager.import_parameters(FileManager.RND_FRM_SMTH)
+    if birth == 'True':
+        render_form_smooth_phase(birth_path)
+    if sniffing == 'True':
+        render_form_smooth_phase(sniffing_path)
+    if wipe == 'True':
+        render_form_smooth_phase(wipe_path)
+    if gallop == 'True':
+        render_form_smooth_phase(gallop_path)
+    if jump == 'True':
+        render_form_smooth_phase(jump_path)
+    if sit == 'True':
+        render_form_smooth_phase(sit_path)
     return
