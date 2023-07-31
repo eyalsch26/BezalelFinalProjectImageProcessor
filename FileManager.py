@@ -15,14 +15,31 @@ RAST_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
 FRAME_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog_02.png'
 TEXT_DIR = 'G:\Eyal\Documents\Bezalel\FinalProject\BCPData'
 # Mac
-FRAME_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/Thread/images/Render/Form/Smooth/Birth/SmoothBirth.3554.png'
+FRAME_IN_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Input/POC/Aang/Aang.0003' \
+               '.png'  #  Wipe/SmoothWipe.4201.png'
 FRAMES_DIR_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Life/images/Shape.01.png'
 VEC_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector'
 RAST_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Raster'
 CLR_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Colour'
 RND_TXT_HEAD = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Text/Headline' \
                '/ParametersFiles_Text_Headline.txt'
+RND_LOGO = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Logo' \
+               '/ParametersFiles_Logo.txt'
 RND_CNT_SETUP = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Setup/ParametersFiles_Content_Setup.txt'
+RND_CNT_CHASE = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Chase' \
+                '/ParametersFiles_Content_Chase.txt'
+RND_CNT_ACQTNCE = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Acquaintance' \
+                '/ParametersFiles_Content_Acquaintance.txt'
+RND_CNT_FIRST_DSASMBLY = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                    '/FirstDisassembly/ParametersFiles_Content_FirstDisassembly.txt'
+RND_CNT_FIRST_DSASMBLY_GRY = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                    '/FirstDisassemblyGrays/ParametersFiles_Content_FirstDisassemblyGrays.txt'
+RND_CNT_SECOND_DSASMBLY = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                    '/SecondDisassembly/ParametersFiles_Content_SecondDisassembly.txt'
+RND_CNT_SECOND_DSASMBLY_SLD = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                    '/SecondDisassemblySolid/ParametersFiles_Content_SecondDisassemblySolid.txt'
+RND_CNT_FINL_FUSN = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                    '/FinalFusion/ParametersFiles_Content_FinalFusion.txt'
 RND_CNT_CUBST = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist/ParametersFiles_Content_Cubist.txt'
 RND_CNT_CUBST_CONV = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/Cubist' \
                      '/Convergence/ParametersFiles_Content_Cubist_Convergence.txt'
@@ -34,10 +51,74 @@ RND_FRM_CUBST = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/Pa
               '/ParametersFile_Form_Cubist.txt'
 RND_BG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Background' \
          '/ParametersFile_Background.txt'
+RND_FRM_LINE_FRST_TCH = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Line' \
+              '/FirstTouch/ParametersFile_Form_Line_FirstTouch.txt'
+RND_FRM_LINE_FRST_DSASMBLY = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Line' \
+              '/FirstDisassembly/ParametersFile_Form_Line_FirstDisassembly.txt'
 RND_FRM_LNR = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Linear' \
               '/ParametersFile_Form_Linear.txt'
 RND_FRM_SMTH = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Form/Smooth' \
               '/ParametersFile_Form_Smooth.txt'
+RND_CRTUR = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+              '/ParametersFile_Creatures.txt'
+RND_BTRFY_SETUP = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures/Butterfly' \
+                  '/Setup/ParametersFile_Butterfly_Setup.txt'
+RND_BTRFY_AFTRBRTH = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Butterfly/AfterBirth/ParametersFile_Butterfly_AfterBirth.txt'
+RND_BTRFY_CRDTS = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Butterfly/Credits/ParametersFile_Butterfly_Credits.txt'
+RND_BTRFY_END = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Butterfly/End/ParametersFile_Butterfly_End.txt'
+RND_BUBBLE_0 = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Bubbles/Bubble_0/ParametersFile_Bubble_0.txt'
+RND_BUBBLE_1 = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Bubbles/Bubble_1/ParametersFile_Bubble_1.txt'
+RND_BUBBLE_2 = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Bubbles/Bubble_2/ParametersFile_Bubble_2.txt'
+RND_BUBBLE_3 = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Bubbles/Bubble_3/ParametersFile_Bubble_3.txt'
+RND_BUBBLE_4 = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Bubbles/Bubble_4/ParametersFile_Bubble_4.txt'
+RND_BUBBLE_5 = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/Bubbles/Bubble_5/ParametersFile_Bubble_5.txt'
+RND_SQRE_FRAME_LOW = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/SquareFrame/LowAngle/ParametersFile_SquareFrame_LowAngle.txt'
+RND_SQRE_FRAME_HIGH_FRNT = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/SquareFrame/HighAngle/Front/ParametersFile_SquareFrame_HighAngle_Front.txt'
+RND_SQRE_FRAME_HIGH_BACK = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/SquareFrame/HighAngle/Back/ParametersFile_SquareFrame_HighAngle_Back.txt'
+RND_TRI_FRAME_AVOID = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/TriangleFrameAvoid/ParametersFile_TriangleFrame_Avoid.txt'
+RND_TRI_FRAME_CHASE = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/TriangleFrameChase/ParametersFile_TriangleFrame_Chase.txt'
+RND_RNGS_PRMD_CMPLT_FRONT = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/RingsPyramid/Complete/Front/ParametersFile_RingsPyramid_Complete_Front.txt'
+RND_RNGS_PRMD_CMPLT_BACK = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/RingsPyramid/Complete/Back/ParametersFile_RingsPyramid_Complete_Back.txt'
+RND_RNGS_PRMD_PRT_FRONT = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/RingsPyramid/Partial/Front/ParametersFile_RingsPyramid_Partial_Front.txt'
+RND_RNGS_PRMD_PRT_BACK = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/RingsPyramid/Partial/Back/ParametersFile_RingsPyramid_Partial_Back.txt'
+RND_HOLLOW_ROCK_ACQ = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/HollowRock/Acquaintance/ParametersFile_HollowRock_Acquaintance.txt'
+RND_HOLLOW_ROCK_CRDTS = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Creatures' \
+                     '/HollowRock/Credits/ParametersFile_HollowRock_Credits.txt'
+RND_CNT_SMOOTH_BIRTH = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content/SmoothPhase/Rasterization_Content_SmoothBirth.txt'
+RND_CNT_SMOOTH_SNIF = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                      '/SmoothPhase/Rasterization_Content_SmoothSniff.txt'
+RND_CNT_SMOOTH_WIPE = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                      '/SmoothPhase/Rasterization_Content_SmoothWipe.txt'
+RND_CNT_SMOOTH_GALLOP = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                        '/SmoothPhase/Rasterization_Content_SmoothGallop.txt'
+RND_CNT_SMOOTH_JUMP = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                      '/SmoothPhase/Rasterization_Content_SmoothJump.txt'
+RND_CNT_SMOOTH_SIT = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/Content' \
+                     '/SmoothPhase/Rasterization_Content_SmoothSit.txt'
+RND_FACE = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/POC/FaceTest/ParametersFile_Face.txt'
+RND_AANG = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/POC/Aang' \
+        '/ParametersFile_Aang.txt'
+RND_ME = '/Users/eyalschaffer/Documents/Bezalel/FinalProject/DataFiles/ParametersFiles/POC/Me' \
+        '/ParametersFile_Me.txt'
 
 # Constants
 FPS = 24

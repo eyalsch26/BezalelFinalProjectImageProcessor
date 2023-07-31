@@ -242,7 +242,7 @@ def clean_undesired_pixels(im):
     return cleanest_im
 
 
-def detect_edges_new(im, t1_co=1.25, t2_co=0.75):
+def detect_edges_new(im, t1_co=1.25, t2_co=0.775):   # Original t2=0.75. Best for Aang: t2_co=0.787
     """
     Finds the edges in the image based on the canny detection algorithm. The low filter is set to 0.975 and the high
     filter is set to 0.995 as default.
@@ -367,6 +367,9 @@ def detect_corners(edges_im):
     y_corners[(tmp == 549) | (tmp == 660) | (tmp == 594) | (tmp == 585) |
               (tmp == 586) | (tmp == 553) | (tmp == 676) | (tmp == 658)] = 1
     corners += i_corners + c_corners + l_corners + r_corners + t_x_corners + y_corners
+    if len(np.argwhere(corners != 0)) == 0 and np.max(edges_im) != 0:
+        corners_indices = np.argwhere(edges_im != 0)[::50]
+        corners[corners_indices.T[0], corners_indices.T[1]] = 1
     return corners
 
 
@@ -690,16 +693,19 @@ def calculate_path_curve_error_new(path, curve):
     max_dim = np.max((int(np.max(path)), int(np.max(curve)))) + 1
     path_im = np.zeros((max_dim, max_dim))
     curve_im = np.zeros((max_dim, max_dim))
-    path_indices = path.T[0] * 2 + path.T[1]
-    curve_indices = curve.T[0] * 2 + curve.T[1]
-    np.put(path_im, path_indices.astype(np.int32), 1.0)
-    np.put(curve_im, curve_indices.astype(np.int32), 1.0)
+    path_im[path.T[0], path.T[1]] = 1
+    curve_im[curve.T[0].astype(int), curve.T[1].astype(int)] = 1
+    # path_indices = path.T[0] * 2 + path.T[1]
+    # curve_indices = curve.T[0] * 2 + curve.T[1]
+    # np.put(path_im, path_indices.astype(np.int32), 1.0)
+    # np.put(curve_im, curve_indices.astype(np.int32), 1.0)
     curve_im_padded = scipy.signal.convolve2d(curve_im, np.ones((3, 3)), mode='same')
     path_im_padded = scipy.signal.convolve2d(path_im, np.ones((3, 3)), mode='same')
     max_len = np.max((len(np.argwhere(path_im_padded != 0)), len(np.argwhere(curve_im_padded != 0))))
     error_im = path_im_padded * curve_im_padded
     error = 1 - (len(np.argwhere(error_im != 0)) / max_len)
     return error
+
 
 # Original.
 def recover_bezier_control_points(path, threshold=0.15, min_path_l=45):  # Original threshold=0.25. 0.15 Artifacts
@@ -726,7 +732,7 @@ def recover_bezier_control_points(path, threshold=0.15, min_path_l=45):  # Origi
     return bzr_ctrl_pts_dict
 
 
-def recover_bezier_control_points_new(path, threshold=0.075, min_path_l=45):
+def recover_bezier_control_points_new(path, threshold=0.25, min_path_l=45):
     path_l = len(path)
     bzr_ctrl_pts_dict = dict()
     bzr_ctrl_pts = calculate_bezier_control_points(path)
@@ -772,7 +778,7 @@ def trace_edges_to_bezier_new(edges_im, corner_im, min_path_len):
     paths_num = len(paths_dict)
     curves_num = 0
     for p in range(paths_num):
-        cur_bzr_ctrl_pts_dict = recover_bezier_control_points(paths_dict[p], min_path_l=min_path_len)
+        cur_bzr_ctrl_pts_dict = recover_bezier_control_points_new(paths_dict[p], min_path_l=min_path_len)
         cur_curves_num = len(cur_bzr_ctrl_pts_dict)
         for c in range(cur_curves_num):
             bzr_ctrl_pts_dict[curves_num + c] = cur_bzr_ctrl_pts_dict[c]
@@ -993,6 +999,8 @@ def collapse_content_curves(bzr_ctrl_pts_arr, r_f=0.2, diminish=True):
 
 
 def index_displace_distort_factor(idx, start, end, direction, method='linear'):
+    if direction == 'static':
+        return 0.5
     idx_factor = (idx - start) / (end - start) if end > start else 1
     if method == 'root':
         idx_factor = np.sqrt(idx_factor)

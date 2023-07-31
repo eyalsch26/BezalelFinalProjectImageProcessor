@@ -186,10 +186,20 @@ def apply_chalk_texture(p, r, stroke):
     return stroke * f
 
 
-def apply_pastel_texture(p, r, stroke):
-    txr_indices = np.random.randint(0, stroke.shape[0] * stroke.shape[1], 2 * int(r))
-    txr_im = np.zeros(stroke.shape[0] * stroke.shape[1])
-    txr_im[txr_indices] = 1
+def apply_pastel_texture(stroke):
+    strk_indices = np.argwhere(stroke != 0)
+    x_s = np.min(strk_indices.T[0])
+    x_e = np.max(strk_indices.T[0])
+    y_s = np.min(strk_indices.T[1])
+    y_e = np.max(strk_indices.T[1])
+    strk_height = x_e - x_s
+    strk_width = y_e - y_s
+    r = np.min((strk_height, strk_width)) * 0.5
+    txr_indices = np.random.randint(0, strk_height * strk_width, 2 * int(r))
+    txr_strk = np.zeros(strk_height * strk_width)
+    txr_strk[txr_indices] = 1
+    txr_im = np.zeros(stroke.shape)
+    txr_im[x_s:x_e, y_s:y_e] = txr_strk.reshape((strk_height, strk_width))
     k = int(0.25 * r) + 1
     cur_kernel = np.ones((k, k))
     strk_res = scipy.signal.convolve2d(txr_im.reshape(stroke.shape), cur_kernel, mode='same')
@@ -212,8 +222,20 @@ def apply_cloth_texture(stroke):
     return stroke * txr
 
 
-def apply_filament_texture(k, stroke):  # TODO: Not working.
-    res_stroke = Vectorizer.blur_image(stroke, k)
+def apply_smooth_form_cloth_texture(stroke):
+    x = np.ones(stroke.shape)
+    ratio = np.random.randint(1, 3)
+    x[::20 * ratio] = 0
+    x.T[::40 // ratio] = 0
+    txr = Vectorizer.blur_image(x * apply_random_texture(stroke), 5)
+    return stroke * txr
+
+
+def apply_filament_texture(stroke):  # TODO: Not working.
+    k = 2 * int(0.5 * np.min(stroke.shape)) + 1
+    strk_core = np.zeros((stroke.shape[0] * 3, stroke.shape[1] * 3))
+    strk_core[stroke.shape[0]//2][strk_core.shape[1]//2] = 1
+    res_stroke = np.clip(Vectorizer.blur_image(strk_core, k) + strk_core, 0, 1)
     return res_stroke
 
 
@@ -341,7 +363,7 @@ def add_texture0(p, r, stroke, texture=1):
     return stroke  # Solid. 7%.
 
 
-def add_texture(p, r, stroke, texture=1):
+def add_texture(stroke, texture=1):
     # solid, chalk, charcoal, watercolour, oil_dry, oil_wet, pen, pencil, perlin_noise, splash, spark, radius_division.
     if texture < 40:
         if texture > 15:
@@ -353,7 +375,12 @@ def add_texture(p, r, stroke, texture=1):
         if texture > 80:
             return apply_stripes_texture(stroke)
         return apply_sin_texture(stroke)
-    return apply_pastel_texture(p, r, stroke)
+    return apply_pastel_texture(stroke)
+
+
+def texture_frame(shape, texture=20):
+    im = apply_cloth_texture(np.ones(shape))
+    return im
 
 
 def add_texture1(stroke, texture=1):
@@ -401,7 +428,7 @@ def pixel_stroke(p, r, blur_kernel=3, texture=1, opacity=1):
     # Adding blur.
     stroke = scipy.signal.convolve2d(stroke, Vectorizer.gaussian_kernel(blur_kernel), mode='same')
     # Adding texture.
-    stroke = add_texture(p, r, stroke, texture)
+    stroke = add_texture(stroke, texture)
     # Applying opacity + considering interpolation.
     stroke *= (opacity * (1 - np.linalg.norm(p - np.round(p))))
     return stroke
@@ -462,7 +489,7 @@ def stroke_rasterizer1(bcp, radius_min=1, radius_max=5, radius_style='log', shap
         p = bzr_pts[i]
         r = stroke_radius(radius_min, radius_max, radius_style, n, i)
         s = stroke_strength(strength_style, n, i)
-        pxl_strk = pixel_stroke(p, r, blur_kernel, s)
+        pxl_strk = pixel_stroke1(p, r, blur_kernel, s)
         # Placing the stroke on the canvas.
         p_x_e = int(p[0] - x_min + radius_max + np.ceil(pxl_strk.shape[0]/2))
         p_x_s = p_x_e - pxl_strk.shape[0]
@@ -519,7 +546,8 @@ def diminish_bcps_num(bezier_control_points_arr, min_l_r=0.5):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Content ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, displace_max, radius_min, blur_kernel, texture_style, texture_type, r_min, r_max,
+def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, diminish, diminish_coefficient, displace,
+                       displace_max, radius_min, blur_kernel, texture_style, texture_type, r_min, r_max,
                        g_min, g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f):
     # Preparing the image.
     canvas_output_x, canvas_output_y = cnvs_shape
@@ -540,8 +568,11 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, disp
     pxl_arr = np.argwhere(im_y_alpha != 0) * canvas_scaler
     pxl_num = len(pxl_arr)
     coof = 1 - (pxl_num / (cnvs_shape[0] * cnvs_shape[1]))
+    dmnsh_coef = float(diminish_coefficient) if diminish == 'True' else 0.01
     content_radius = np.sqrt(0.5 * pxl_num / np.pi)
-    diminish_step = int(0.5 * content_radius + 0.01 * pxl_num)
+    diminish_step = int(0.5 * content_radius + dmnsh_coef * pxl_num)
+    if diminish_step < 2:
+        diminish_step = 2
     pxl_idx_arr = np.random.randint(0, diminish_step, pxl_num)
     pxl_pts = pxl_arr[pxl_idx_arr == 0]
     center = 0.5 * (np.min(pxl_pts, axis=0) + np.max(pxl_pts, axis=0))
@@ -592,6 +623,15 @@ def content_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, displace, disp
     return im_rgb, im_a
 
 
+def content_smooth_rasterizer(im):
+    # Preparing the image.
+    alpha_im = Colourizer.alpha_input_image(im)
+    txr_im = apply_pastel_texture(alpha_im)
+    # txr_im = Vectorizer.blur_image(apply_pastel_texture(alpha_im), 3)
+    im_rgb = np.dstack((txr_im, txr_im, txr_im))
+    return im_rgb, alpha_im
+
+
 def content_vector_rasterizer(im, idx=24, min_pts_num=80, diminish_pts_f=20):
     relative_idx = (idx % FileManager.FPS) / FileManager.FPS
     # Contour.
@@ -616,6 +656,159 @@ def content_vector_rasterizer(im, idx=24, min_pts_num=80, diminish_pts_f=20):
     # radius_arr = 0.5 * vecs_norm
     return bcp, bzr_crv_num, initial_contour_pxl_num
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Creatures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def creature_contour_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, diminish, diminish_coefficient, displace,
+                                displace_max, radius_min, blur_kernel, texture_style, texture_type, r_min, r_max,
+                                g_min, g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f):
+    # Preparing the image.
+    canvas_output_x, canvas_output_y = cnvs_shape
+    im_r = np.zeros(cnvs_shape)
+    im_g = np.zeros(cnvs_shape)
+    im_b = np.zeros(cnvs_shape)
+    im_a = np.zeros(cnvs_shape)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    edges_im = Vectorizer.detect_edges_new(im_y)
+    # Preparing the image base.
+    original_zero_x = np.uint16(0.5 * cnvs_shape[0])
+    original_zero_y = np.uint16(0.5 * cnvs_shape[1])
+    original_end_x = 3 * original_zero_x
+    original_end_y = 3 * original_zero_y
+    # Computing the pixels of the curve.
+    pxl_arr = np.argwhere(edges_im != 0) * canvas_scaler
+    pxl_num = len(pxl_arr)
+    coof = 1 - (pxl_num / (cnvs_shape[0] * cnvs_shape[1]))
+    dmnsh_coef = float(diminish_coefficient) if diminish == 'True' else 0.01
+    content_radius = np.sqrt(0.5 * pxl_num / np.pi)
+    diminish_step = int(0.5 * content_radius + dmnsh_coef * pxl_num)
+    if diminish_step < 2:
+        diminish_step = 2
+    pxl_idx_arr = np.random.randint(0, diminish_step, pxl_num)
+    pxl_pts = pxl_arr[pxl_idx_arr == 0]
+    center = 0.5 * (np.min(pxl_pts, axis=0) + np.max(pxl_pts, axis=0))
+    radius_coof = 0.25 * coof * idx_factor
+    center_vecs = pxl_pts - center  # Vectors from the center to the points.
+    norms_arr = np.linalg.norm(center_vecs, axis=1)
+    n = len(pxl_pts)
+    if displace == 'True':
+        radius_coof = 0.25 * coof * (1 - idx_factor)
+        displace_arr = np.random.randint(0, displace_max, n)
+        displace_vecs = idx_factor * displace_arr.reshape((len(displace_arr), 1)) * center_vecs / norms_arr.reshape(
+            (len(norms_arr), 1)) + center_vecs
+        pxl_pts += displace_vecs
+    radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
+    rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
+    clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range, idx_factor)  # Defining colour.
+    txr_arr = generate_textures_arr(n, texture_style, texture_type)  # np.random.randint(0, 100, n)
+    # Computing each pixel stroke.
+    for i in range(n):
+        big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
+        p = pxl_pts[i]
+        r = radius_arr[i]
+        s = r / np.max(radius_arr)
+        cur_txr = txr_arr[i]
+        cur_clr = clr_arr[i]
+        stroke = pixel_stroke(p, r, blur_kernel, cur_txr, s)
+        # Placing the stroke on the canvas.
+        r_s = stroke.shape[0] // 2
+        # new_p_x = np.uint16(p[0]) + original_zero_x  # Original.
+        # new_p_y = np.uint16(p[1]) + original_zero_y  # Original.
+        new_p_x = np.uint32(p[0]) + original_zero_x
+        new_p_y = np.uint32(p[1]) + original_zero_y
+        big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
+        stroke = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
+        stroke = np.clip(stroke, 0, 1)
+        stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
+                                                                    Colourizer.CLR_DIM))
+        stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
+        stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+        stroke_im_r = stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+        stroke_im_g = stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+        stroke_im_b = stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+        im_r = Colourizer.composite_rgb(stroke_im_r, im_r, stroke_alpha_im)
+        im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
+        im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
+        im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+    im_rgb = np.dstack((im_r, im_g, im_b))
+    return im_rgb, im_a
+
+
+def creature_volume_rasterizer(im, cnvs_shape, canvas_scaler, idx_factor, diminish, diminish_coefficient, displace,
+                       displace_max, radius_min, blur_kernel, texture_style, texture_type, r_min, r_max,
+                       g_min, g_max, b_min, b_max, colour_style, alpha, alpha_c, alpha_f):
+    # Preparing the image.
+    canvas_output_x, canvas_output_y = cnvs_shape
+    im_r = np.zeros(cnvs_shape)
+    im_g = np.zeros(cnvs_shape)
+    im_b = np.zeros(cnvs_shape)
+    im_a = np.zeros(cnvs_shape)
+    im_yiq = Colourizer.rgb_to_yiq(im)
+    im_y = im_yiq[:, :, 0]
+    alpha_im = Colourizer.alpha_input_image(im)
+    im_y_alpha = im_y * alpha_im
+    # Preparing the image base.
+    original_zero_x = np.uint16(0.5 * cnvs_shape[0])
+    original_zero_y = np.uint16(0.5 * cnvs_shape[1])
+    original_end_x = 3 * original_zero_x
+    original_end_y = 3 * original_zero_y
+    # Computing the pixels of the curve.
+    pxl_arr = np.argwhere(im_y_alpha != 0) * canvas_scaler
+    pxl_num = len(pxl_arr)
+    coof = 1 - (pxl_num / (cnvs_shape[0] * cnvs_shape[1]))
+    dmnsh_coef = float(diminish_coefficient) if diminish == 'True' else 0.01
+    content_radius = np.sqrt(0.5 * pxl_num / np.pi)
+    diminish_step = int(0.5 * content_radius + dmnsh_coef * pxl_num)
+    if diminish_step < 2:
+        diminish_step = 2
+    pxl_idx_arr = np.random.randint(0, diminish_step, pxl_num)
+    pxl_pts = pxl_arr[pxl_idx_arr == 0]
+    center = 0.5 * (np.min(pxl_pts, axis=0) + np.max(pxl_pts, axis=0))
+    radius_coof = 0.25 * coof * idx_factor
+    center_vecs = pxl_pts - center  # Vectors from the center to the points.
+    norms_arr = np.linalg.norm(center_vecs, axis=1)
+    n = len(pxl_pts)
+    if displace == 'True':
+        radius_coof = 0.25 * coof * (1 - idx_factor)
+        displace_arr = np.random.randint(0, displace_max, n)
+        displace_vecs = idx_factor * displace_arr.reshape((len(displace_arr), 1)) * center_vecs / norms_arr.reshape(
+            (len(norms_arr), 1)) + center_vecs
+        pxl_pts += displace_vecs
+    radius_arr = radius_coof * (np.max(norms_arr) - norms_arr) + radius_min
+    rgb_range = np.array([[r_min, r_max], [g_min, g_max], [b_min, b_max]], dtype=int)
+    clr_arr = Colourizer.generate_colours_arr(n, colour_style, rgb_range, idx_factor)  # Defining colour.
+    txr_arr = generate_textures_arr(n, texture_style, texture_type)  # np.random.randint(0, 100, n)
+    # Computing each pixel stroke.
+    for i in range(n):
+        big_canvas = np.zeros(tuple(2 * np.asarray(cnvs_shape)))
+        p = pxl_pts[i]
+        r = radius_arr[i]
+        s = r / np.max(radius_arr)
+        cur_txr = txr_arr[i]
+        cur_clr = clr_arr[i]
+        stroke = pixel_stroke(p, r, blur_kernel, cur_txr, s)
+        # Placing the stroke on the canvas.
+        r_s = stroke.shape[0] // 2
+        # new_p_x = np.uint16(p[0]) + original_zero_x  # Original.
+        # new_p_y = np.uint16(p[1]) + original_zero_y  # Original.
+        new_p_x = np.uint32(p[0]) + original_zero_x
+        new_p_y = np.uint32(p[1]) + original_zero_y
+        big_canvas[new_p_x - r_s:new_p_x + r_s + 1, new_p_y - r_s:new_p_y + r_s + 1] += stroke
+        stroke = big_canvas[original_zero_x:original_end_x, original_zero_y:original_end_y]
+        stroke = np.clip(stroke, 0, 1)
+        stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
+                                                                    Colourizer.CLR_DIM))
+        stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
+        stroke_alpha_im = Colourizer.alpha_channel(stroke, alpha, alpha_c, int(alpha_f))
+        stroke_im_r = stroke_rgb[::, ::, :1:].reshape(cnvs_shape)
+        stroke_im_g = stroke_rgb[::, ::, 1:2:].reshape(cnvs_shape)
+        stroke_im_b = stroke_rgb[::, ::, 2::].reshape(cnvs_shape)
+        im_r = Colourizer.composite_rgb(stroke_im_r, im_r, stroke_alpha_im)
+        im_g = Colourizer.composite_rgb(stroke_im_g, im_g, stroke_alpha_im)
+        im_b = Colourizer.composite_rgb(stroke_im_b, im_b, stroke_alpha_im)
+        im_a = Colourizer.composite_alpha(stroke_alpha_im, im_a)
+    im_rgb = np.dstack((im_r, im_g, im_b))
+    return im_rgb, im_a
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Background ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def background_rasterizer(cnvs_shape, blur_kernel=5, radius=50, texture=50, alpha='y'):

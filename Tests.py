@@ -228,7 +228,7 @@ def my_corner_detection_check(t1_co=0.975, t2_co=0.995):
     corners_on_edges_im = (canny_edges_im + corners_im) * 0.5
     im_yiq_new = np.dstack((corners_on_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 3, f'DetectCorners', True, 'm')
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 15, f'DetectCorners', True, 'm')
 
 
 # Works.
@@ -321,7 +321,7 @@ def vectorize_check_mac():
     raster_im = Rasterizer.bezier_curves_rasterizer(bzr_ctrl_pts_arr, canvas_shape=im_y.shape)
     im_yiq_new = np.dstack((raster_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 7, f'Vectorize', True, 'm')
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 10, f'Vectorize', True, 'm')
 
 
 def trace_edges_check():
