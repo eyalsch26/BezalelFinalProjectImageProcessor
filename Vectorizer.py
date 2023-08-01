@@ -303,6 +303,35 @@ def detect_edges(im, t1_co=0.975, t2_co=0.995):
     return edges_im
 
 
+def detect_connectivity_components_edges(im, t1_co=1.25, t2_co=0.775):   # Original t2=0.75. Best for Aang: t2_co=0.787
+    """
+    Finds the edges in the image based on the canny detection algorithm. The low filter is set to 0.975 and the high
+    filter is set to 0.995 as default.
+    :param im: A numpy array with dtype np.float64.
+    :param t1_co: A floating point number representing the low pass filter so that pixels with values lower than
+    t1_co will be removed from the final image and will not represent an edge.
+    :param t2_co: A floating point number representing the high pass filter so that pixels with values higher than
+    t2_co will be removed from the final image and will not represent an edge.
+    :return: A numpy array with shape im.shape and with dtype np.float64. In this image only the edges remained.
+    """
+    # Computing Laplacian/Sobel on the image.
+    # s = sobel_gradient(im)  # Works yet not as good as just laplacian - thick lines.
+    # lap_im = sobel_gradient(s[0])[0] + sobel_gradient(s[1])[1]
+    lap_im = laplacian_image(im)  # For images from reality use: blur_image(im, 15)
+    lap_im -= np.min(lap_im)  # Clipping to [0, 1].
+    lap_im /= np.max(lap_im)  # Normalizing.
+    # Computing thresholds.
+    t1 = t1_co * (np.mean(lap_im) + np.std(lap_im))
+    t2 = t2_co * t1
+    # Result according to the thresholds.
+    edges_im = np.zeros(im.shape)
+    edges_im[lap_im <= t2] = 1
+    # edges_im[lap_im >= t1] = 1
+    # Remove isolated pixels and spikes pixels.
+    edges_im = clean_undesired_pixels(edges_im)
+    return edges_im
+
+
 def corner_gradient_kernels():
     """
     Builds four matrices to find the gradient along the four axes: horizontal, vertical, descending diagonal (from
@@ -597,6 +626,61 @@ def trace_edges_to_paths(edges_im, corner_im, min_path_len):
             paths[paths_num + j] = cur_paths[j]
         paths_num += cur_paths_num
     return paths
+
+
+def connectivity_component(edges_im, p):
+    path = np.array([p])
+    visited = {tuple(p)}
+    relative_neighbours = find_neighbours(edges_im, p)  # Relative neighbours.
+    neighbours_vecs = relative_neighbours - 1  # Used vectors_to_neighbours(relative_neighbours).
+    neighbours = p + neighbours_vecs  # Global neighbours.
+    to_visit = neighbours
+    # Running in DFS to build the paths.
+    while len(to_visit) != 0:
+        # Finding the next pixel in the path.
+        cur_pxl = to_visit[-1]
+        to_visit = np.delete(to_visit, -1, 0)  # Popping the last element from the numpy array (stack).
+        while tuple(cur_pxl) in visited and len(to_visit) != 0:
+            cur_pxl = to_visit[-1]
+            to_visit = np.delete(to_visit, -1, 0)  # Popping the last element from the numpy array (stack).
+        # Adding the new pixel to the data structures.
+        path = np.append(path, [cur_pxl], axis=0)
+        visited.add(tuple(cur_pxl))
+        # Applying neighbourhood operations on the current pixel.
+        relative_neighbours = find_neighbours(edges_im, cur_pxl)  # Relative neighbours.
+        neighbours_vecs = relative_neighbours - 1  # Used vectors_to_neighbours(relative_neighbours).
+        neighbours = cur_pxl + neighbours_vecs  # Global neighbours.
+        neighbours_filtered = np.array([neighbour for neighbour in neighbours if tuple(neighbour) not in visited])
+        for neighbour in neighbours_filtered:
+            to_visit = np.append(to_visit, np.array([neighbour]), axis=0)
+    return path
+
+
+def connectivity_components(edges_im):
+    cur_edges_im = edges_im
+    cnnct_cmpts = dict()
+    origins = np.argwhere(edges_im != 0)
+    cnnct_cmpts_num = 0
+    while len(origins) != 0:
+        cnnct_cmpt = connectivity_component(cur_edges_im, origins[0])
+        cnnct_cmpts[cnnct_cmpts_num] = cnnct_cmpt
+        cnnct_cmpts_num += 1
+        cur_edges_im[cnnct_cmpt.T[0], cnnct_cmpt.T[1]] = 0
+        origins = np.argwhere(cur_edges_im != 0)
+    return cnnct_cmpts
+
+
+def connectivity_component_weight(connectivity_component, im_center):
+    center = np.average(connectivity_component, axis=0)
+    vecs = connectivity_component - center
+    distances = np.linalg.norm(vecs)
+    average_radius = np.average(distances)
+    weight = np.linalg.norm(center - im_center) * average_radius
+    return center, weight
+
+
+def balance_point():
+    pass
 
 
 def partition_indices(path):

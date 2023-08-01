@@ -59,11 +59,22 @@ if __name__ == '__main__':
     #     '/Colourization_Jellyfish_2.txt', os='m')
 
     # Tests.my_edge_detection_check()
-    Tests.my_corner_detection_check()
-    # a = np.array([[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]])
-    # b = np.array([[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]])
-    # c = a[::10]
-    # print(c)
+    # Tests.my_corner_detection_check()
+    # a = np.array([[0, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5],  [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]])
+    # b = np.zeros((8, 8))
+    # b[a.T[0], a.T[1]] = 1
+    b = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 1, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 1, 1, 1, 1, 0, 0],
+                  [0, 0, 1, 1, 0, 1, 1, 0, 0],
+                  [0, 0, 1, 0, 1, 0, 0, 1, 1],
+                  [0, 0, 1, 1, 0, 1, 0, 1, 0],
+                  [0, 0, 0, 1, 1, 1, 0, 1, 0],
+                  [0, 0, 0, 0, 1, 1, 1, 0, 0],
+                  [1, 0, 0, 0, 0, 0, 0, 0, 0]])
+    c = Vectorizer.connectivity_component(b, [1, 2])
+    d = np.argwhere(b == 1)
+    print(c)
     # err = Vectorizer.calculate_path_curve_error_new(a, b)
     # Tests.trace_edges_check()
     # Tests.vectorize_check_mac()

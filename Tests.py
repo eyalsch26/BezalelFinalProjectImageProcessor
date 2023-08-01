@@ -673,3 +673,8 @@ def displace_distort_colour_bcp_from_file_check():
     im_rgb = Colourizer.colour_stroke(im_rgb_cur, 1.0, 0.49, 0)
     im_alpha = Colourizer.alpha_channel(raster_im, alpha='b')
     FileManager.save_rgba_image(FileManager.RAST_DIR_OUT, 'DogFromFileDisplacement38', im_rgb, im_alpha)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Design & Technology ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def calculate_balance_point(im):
+    # Finds the connectivity components in the image.
+    Vectorizer.connectivity_component(im, [0, 0])
