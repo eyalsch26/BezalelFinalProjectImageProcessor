@@ -76,6 +76,26 @@ def vectorize_text_contour_to_file(parameters_path, os='w'):
         FileManager.save_bezier_control_points(bcp_f_name, im_bcp)
 
 
+def vectorize_contour_from_scan_to_file(parameters_path, os='w'):
+    dir_in_path, f_prefix, dir_out_bcp_path, start, end, digits_num, min_crv_ratio = FileManager.import_parameters(parameters_path)
+    # Iterating over the desired images.
+    for im_file_idx in range(int(start), int(end) + 1):
+        # Preparing the input/output file name.
+        n_padded = f'{im_file_idx}'
+        while len(n_padded) < digits_num:
+            n_padded = f'0{n_padded}'
+        # Preparing the image.
+        im_name = FileManager.file_path(dir_in_path, f_prefix, n_padded, 'png', os)
+        im = FileManager.import_image(im_name)
+        im_yiq = Colourizer.rgb_to_yiq(im)
+        im_y = im_yiq[:, :, 0]
+        # Finding the Bezier control points.
+        im_bcp = Vectorizer.vectorize_scanned_image(im_y, min_crv_ratio)
+        # Saving the Bezier control points to a file.
+        bcp_f_name = FileManager.file_path(dir_out_bcp_path, f_prefix, n_padded, 'txt', os)
+        FileManager.save_bezier_control_points(bcp_f_name, im_bcp)
+
+
 # Not in use. Content is rasterized directly.
 def vectorize_content_to_file(parameters_path, os='w'):
     dir_in_path, f_prefix, dir_out_bcp_path, start, end, digits_num, min_crv_ratio = FileManager.import_parameters(parameters_path)
@@ -151,7 +171,7 @@ def raster_contour_from_file(parameters_path, os='w'):
             cur_txr = txr_arr[crv_idx]
             cur_clr = clr_arr[crv_idx]
             stroke = Rasterizer.stroke_rasterizer(cur_bcp, strk_w_min, strk_w_max, texture=cur_txr,
-                                                   canvas_shape=cnvs_shape)
+                                                  strength_style='uniform', canvas_shape=cnvs_shape)
             stroke_rgb = np.repeat(stroke, Colourizer.CLR_DIM).reshape((int(canvas_output_x), int(canvas_output_y),
                                                                         Colourizer.CLR_DIM))
             stroke_rgb = Colourizer.colour_stroke(stroke_rgb, cur_clr[0], cur_clr[1], cur_clr[2])
@@ -600,7 +620,7 @@ def render_hollow_rock():
 def render_face_test():
     vectorize, rasterize, vectorize_path, rasterize_path, os = FileManager.import_parameters(FileManager.RND_FACE)
     if vectorize == 'True':
-        vectorize_contour_to_file(vectorize_path, os)
+        vectorize_contour_from_scan_to_file(vectorize_path, os)
     if rasterize == 'True':
         raster_contour_from_file(rasterize_path, os)
     return
@@ -991,3 +1011,35 @@ def render_creatures():
     if cliff == 'True':
         render_creature(cliff_path)
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Scan ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def render_scans():
+    dir_in = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Input/POC/ScanSample'
+    dir_out = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Raster/POC/ScanSamples'
+    f_prefix = 'breakfree_sh_01'
+    f_suffix = 'jpg'
+    s = 1
+    e = 27
+    digits_num = 3
+    for im_file_idx in range(s, e + 1):
+        n_padded = f'{im_file_idx}'
+        while len(n_padded) < digits_num:
+            n_padded = f'0{n_padded}'
+        im_name = f'{f_prefix}.{n_padded}'
+        # Importing the Bezier control points from the text file.
+        file_full_path = FileManager.file_path(dir_in, f_prefix, n_padded, f_suffix, 'm')
+        im = FileManager.import_image(file_full_path)
+        im_yiq = Colourizer.rgb_to_yiq(im)
+        im_y = im_yiq[:, :, 0]
+        im_i = np.zeros(im_y.shape)
+        im_q = np.zeros(im_y.shape)
+        im_y_min = np.min(im_y)
+        im_y -= im_y_min
+        im_y_max = np.max(im_y)
+        im_y /= im_y_max
+        # Computing the image's edges.
+        a_im = Vectorizer.blur_image(Vectorizer.detect_edges_from_scan(im_y, t2_co=0.9), 3) * (1 - im_y)
+        im_yiq_new = np.dstack((np.zeros(a_im.shape), im_i, im_q))
+        im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
+        FileManager.save_rgba_image(dir_out, im_name, im_rgb, a_im, 'm')
+    return

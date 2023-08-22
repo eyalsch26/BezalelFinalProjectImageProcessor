@@ -208,7 +208,7 @@ def my_edge_detection_check(t1_co=0.975, t2_co=0.995):
     im_q = np.zeros(im_y.shape)
     # Computing the image's edges.
     # canny_edges_im = Vectorizer.detect_edges(im_y, t1_co, t2_co)  # Original.
-    canny_edges_im = Vectorizer.detect_edges_new(im_y)
+    canny_edges_im = Vectorizer.detect_edges_from_scan(im_y)
     im_yiq_new = np.dstack((canny_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
     # FileManager.save_image(FileManager.VEC_DIR_OUT, im_rgb, 51, f'Dog_01DetectEdgesT{t1_co}T{t2_co}', True)  # Original.
@@ -228,7 +228,7 @@ def my_corner_detection_check(t1_co=0.975, t2_co=0.995):
     corners_on_edges_im = (canny_edges_im + corners_im) * 0.5
     im_yiq_new = np.dstack((corners_on_edges_im, im_i, im_q))
     im_rgb = np.uint8(255 * Colourizer.yiq_to_rgb(im_yiq_new))
-    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 15, f'DetectCorners', True, 'm')
+    FileManager.save_image(FileManager.VEC_DIR_OUT_MAC, im_rgb, 19, f'DetectCorners', True, 'm')
 
 
 # Works.

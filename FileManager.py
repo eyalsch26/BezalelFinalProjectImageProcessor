@@ -15,7 +15,7 @@ RAST_DIR_OUT = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Output\Raster'
 FRAME_IN = 'G:\Eyal\Pictures\Bezalel\FinalProject\TestFrames\Input\Dog_02.png'
 TEXT_DIR = 'G:\Eyal\Documents\Bezalel\FinalProject\BCPData'
 # Mac
-FRAME_IN_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Input/POC/Aang/Aang.0003' \
+FRAME_IN_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Input/POC/Aang/Aang.0001' \
                '.png'  #  Wipe/SmoothWipe.4201.png'
 FRAMES_DIR_IN_MAC = '/Users/eyalschaffer/Documents/maya/projects/A_Moment_In_Life/images/Shape.01.png'
 VEC_DIR_OUT_MAC = '/Users/eyalschaffer/Pictures/BezalelFinalProject/Output/Vector'
